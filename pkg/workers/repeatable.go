@@ -13,7 +13,7 @@ type repeatable struct {
 // Repeatable Workers are used to run any tasks that might fail with an error.
 // This worker will swallow ther `Run()` error for the passed in `worker` argument
 // and restart the process. Initialize and Cleanup errors are propigated as normal
-func NewRepeatableWorker(worker goasync.Worker) *repeatable {
+func Repeatable(worker goasync.Worker) *repeatable {
 	return &repeatable{
 		callback: worker,
 	}

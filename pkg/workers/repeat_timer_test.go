@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	. "github.com/onsi/gomega"
 
@@ -11,37 +12,37 @@ import (
 	"github.com/DanLavine/goasync/pkg/workers"
 )
 
-func TestRepeatable_Initialize_Calls_Callback_Initialize(t *testing.T) {
+func TestRepeatTimer_Initialize_Calls_Callback_Initialize(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	fakeWorker1 := &goasyncfakes.FakeWorker{}
-	repeatable := workers.Repeatable(fakeWorker1)
+	repeatTimer := workers.RepeatTimer(time.Second, fakeWorker1)
 
-	g.Expect(repeatable.Initialize()).ToNot(HaveOccurred())
+	g.Expect(repeatTimer.Initialize()).ToNot(HaveOccurred())
 	g.Expect(fakeWorker1.InitializeCallCount()).To(Equal(1))
 }
 
-func TestRepeatable_Cleanup_Calls_Callback_Cleanup(t *testing.T) {
+func TestRepeatTimer_Cleanup_Calls_Callback_Cleanup(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	fakeWorker1 := &goasyncfakes.FakeWorker{}
-	repeatable := workers.Repeatable(fakeWorker1)
+	repeatTimer := workers.RepeatTimer(time.Second, fakeWorker1)
 
-	g.Expect(repeatable.Cleanup()).ToNot(HaveOccurred())
+	g.Expect(repeatTimer.Cleanup()).ToNot(HaveOccurred())
 	g.Expect(fakeWorker1.CleanupCallCount()).To(Equal(1))
 }
 
-func TestRepetable_Work_Swallows_Errors(t *testing.T) {
+func TestRepetTimer_Work_Swallows_Errors(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	fakeWorker1 := &goasyncfakes.FakeWorker{}
 	fakeWorker1.WorkReturns(fmt.Errorf("error that should be swallowed"))
-	repeatable := workers.Repeatable(fakeWorker1)
+	repeatTimer := workers.RepeatTimer(time.Nanosecond, fakeWorker1)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	errChan := make(chan error)
 	go func() {
-		errChan <- repeatable.Work(ctx)
+		errChan <- repeatTimer.Work(ctx)
 	}()
 
 	// check that we keep restarting the process
