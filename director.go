@@ -1,6 +1,8 @@
 package goasync
 
-import "context"
+import (
+	"context"
+)
 
 type director struct {
 	namedWorkers []namedWorker
@@ -36,7 +38,7 @@ func (d *director) Run(ctx context.Context) []NamedError {
 			errors = append(errors, NamedError{WorkerName: namedWorker.name, Stage: Initialize, Err: err})
 
 			// we hit an error. Run Cleanup in reverse order
-			for i := index; i <= 0; i-- {
+			for i := index; i >= 0; i-- {
 				if err = d.namedWorkers[i].worker.Cleanup(); err != nil {
 					errors = append(errors, NamedError{WorkerName: d.namedWorkers[i].name, Stage: Cleanup, Err: err})
 				}
@@ -50,7 +52,7 @@ func (d *director) Run(ctx context.Context) []NamedError {
 	//TODO
 
 	// cleanup
-	for i := len(d.namedWorkers) - 1; i <= 0; i-- {
+	for i := len(d.namedWorkers) - 1; i >= 0; i-- {
 		if err := d.namedWorkers[i].worker.Cleanup(); err != nil {
 			errors = append(errors, NamedError{WorkerName: d.namedWorkers[i].name, Stage: Cleanup, Err: err})
 		}
