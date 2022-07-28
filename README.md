@@ -8,3 +8,15 @@ single purpose units of work.
 ```
 go get -u github.com/DanLavine/goasync
 ```
+
+# Running tests
+
+To run all tests:
+```
+go test --race ./...
+```
+
+If we want to run one specific test we can use:
+```
+go test --race -run [NAME OF TEST] ./...
+```

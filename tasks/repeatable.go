@@ -1,4 +1,4 @@
-package workers
+package tasks
 
 import (
 	"context"
@@ -7,15 +7,15 @@ import (
 )
 
 type repeatable struct {
-	callback goasync.Worker
+	callback goasync.Task
 }
 
-// Repeatable Workers are used to run any tasks that might fail with an error.
-// This worker will swallow ther `Run()` error for the passed in `worker` argument
+// Repeatable Tasks are used to run any tasks that might fail with an error.
+// This task will swallow ther `Run()` error for the passed in `task` argument
 // and restart the process. Initialize and Cleanup errors are propigated as normal
-func Repeatable(worker goasync.Worker) *repeatable {
+func Repeatable(task goasync.Task) *repeatable {
 	return &repeatable{
-		callback: worker,
+		callback: task,
 	}
 }
 
@@ -27,13 +27,13 @@ func (r *repeatable) Cleanup() error {
 	return r.callback.Cleanup()
 }
 
-func (r *repeatable) Work(ctx context.Context) error {
+func (r *repeatable) Execute(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
 		default:
-			_ = r.callback.Work(ctx)
+			_ = r.callback.Execute(ctx)
 		}
 	}
 }

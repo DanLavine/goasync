@@ -1,4 +1,4 @@
-package workers
+package tasks
 
 import (
 	"context"
@@ -9,49 +9,49 @@ import (
 
 type repeatTimer struct {
 	repeatTime time.Duration
-	callback   goasync.Worker
+	subTask    goasync.Task
 }
 
-// RepeatTimer Workers are used to run periodic one off tasks on a timer.
+// RepeatTimer Executeers are used to run periodic one off tasks on a timer.
 // Args:
-//  - repeatTime: amount of time to wait between invoking the callback
-//  - callback: callback worker process that is wrapped for the periodic timer
-func RepeatTimer(repeatTime time.Duration, callback goasync.Worker) *repeatTimer {
+//  - repeatTime: amount of time to wait between invoking the subTask
+//  - task: task process that is wrapped for the periodic timer
+func RepeatTimer(repeatTime time.Duration, task goasync.Task) *repeatTimer {
 	return &repeatTimer{
 		repeatTime: repeatTime,
-		callback:   callback,
+		subTask:    task,
 	}
 }
 
 func (r *repeatTimer) Initialize() error {
-	return r.callback.Initialize()
+	return r.subTask.Initialize()
 }
 
 func (r *repeatTimer) Cleanup() error {
-	return r.callback.Cleanup()
+	return r.subTask.Cleanup()
 }
 
-func (r *repeatTimer) Work(ctx context.Context) error {
+func (r *repeatTimer) Execute(ctx context.Context) error {
 	ticker := time.NewTicker(r.repeatTime)
 	defer ticker.Stop()
 
 	// start off repeatable process by running the calback. This way we don't
 	// have to wait for the timer befor making our 1st calback execution
-	_ = r.callback.Work(ctx)
+	_ = r.subTask.Execute(ctx)
 
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
 		case <-ticker.C:
-			// Possible race on selection, If the 'callback.Work(...)' takes longer than the
+			// Possible race on selection, If the 'subTask.Execute(...)' takes longer than the
 			// ticker, this select is random. So be sure to double check if we should really
 			// shutdown
 			select {
 			case <-ctx.Done():
 				return nil
 			default:
-				_ = r.callback.Work(ctx)
+				_ = r.subTask.Execute(ctx)
 			}
 		}
 	}

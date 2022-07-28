@@ -4,12 +4,12 @@ type Stage string
 
 const (
 	Initialize Stage = "initialize"
-	Work       Stage = "work"
+	Execute    Stage = "execute"
 	Cleanup    Stage = "cleanup"
 )
 
 type NamedError struct {
-	WorkerName string
-	Stage      Stage
-	Err        error
+	TaskName string
+	Stage    Stage
+	Err      error
 }
