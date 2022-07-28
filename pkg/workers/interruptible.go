@@ -10,8 +10,8 @@ import (
 )
 
 type interruptible struct {
-	interrupt chan os.Signal
-	callback  goasync.Worker
+	signals  []os.Signal
+	callback goasync.Worker
 }
 
 // Interruptible Workers are used to run any tasks that can be reloaded at runtime.
@@ -22,12 +22,9 @@ type interruptible struct {
 //  - signals: OS signals to capture and initiate the reload operation
 //  - worker: worker process that is wrapped to handle interruptions
 func Interruptible(signals []os.Signal, worker goasync.Worker) *interruptible {
-	interrupt := make(chan os.Signal)
-	signal.Notify(interrupt, signals...)
-
 	return &interruptible{
-		interrupt: interrupt,
-		callback:  worker,
+		signals:  signals,
+		callback: worker,
 	}
 }
 
@@ -40,56 +37,30 @@ func (i *interruptible) Cleanup() error {
 }
 
 func (i *interruptible) Work(ctx context.Context) error {
-	restarting := false
-	errChan := make(chan error)
-	defer close(errChan)
-
-	// start running the inital process
-	workerCtx, cancel := context.WithCancel(ctx)
-	go func(workerCtx context.Context) {
-		errChan <- i.callback.Work(workerCtx)
-	}(workerCtx)
-
 	for {
-		select {
-		case <-i.interrupt:
-			// we have recieved an interupt.
-			cancel()
-			restarting = true
-		case err := <-errChan:
+		workerCtx, _ := signal.NotifyContext(ctx, i.signals...)
+		if err := i.callback.Work(workerCtx); err != nil {
 			// if there is an error, always return it
-			if err != nil {
-				return err
-			}
+			return err
+		}
 
+		select {
+		case <-ctx.Done():
+			// we are shutting down the application and don't have an error
+			return nil
+		default:
 			select {
-			case <-ctx.Done():
-				// we are shutting down the application and don't have an error
-				return nil
-			default:
-				// if we are not restarting, then the child woker unxepectidly returned
-				fmt.Println("restarting?", restarting)
-				if !restarting {
-					return fmt.Errorf("Interruptible worker unexpectedly stopped")
-				}
-
-				// Cleanup and re-Initialize
+			case <-workerCtx.Done():
+				// This is the case where the Interupt signal triggered the context to close and not the parent.
+				// So we need to restart our worker
 				if err := i.callback.Cleanup(); err != nil {
 					return err
 				}
 				if err := i.callback.Initialize(); err != nil {
 					return err
 				}
-
-				// renew our context and start running again
-				workerCtx, cancel = context.WithCancel(ctx)
-
-				// run worker in background
-				go func(workerCtx context.Context) {
-					errChan <- i.callback.Work(workerCtx)
-				}(workerCtx)
-
-				restarting = false
+			default:
+				return fmt.Errorf("Interruptible worker unexpectedly stopped")
 			}
 		}
 	}
