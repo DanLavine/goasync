@@ -2,6 +2,8 @@ package goasync
 
 import (
 	"context"
+	"fmt"
+	"sync"
 )
 
 type director struct {
@@ -49,7 +51,48 @@ func (d *director) Run(ctx context.Context) []NamedError {
 	}
 
 	// workers
-	//TODO
+	wg := &sync.WaitGroup{}
+	finished := make(chan struct{})
+	namedErrorChan := make(chan NamedError)
+	workerCtx, cancel := context.WithCancel(ctx)
+
+	// start all workers
+	for _, namedWork := range d.namedWorkers {
+		wg.Add(1)
+		go func(namedWorker namedWorker) {
+			defer wg.Done()
+
+			err := namedWorker.worker.Work(workerCtx)
+			if err != nil {
+				namedErrorChan <- NamedError{WorkerName: namedWorker.name, Stage: Work, Err: err}
+			} else {
+				select {
+				case <-workerCtx.Done():
+					// nothing to do here since we are properly shutting down
+				default:
+					// unexpected shutdown for a worker process. Initiate abort of all worker processes
+					namedErrorChan <- NamedError{WorkerName: namedWorker.name, Stage: Work, Err: fmt.Errorf("unexpected shutdown for worker process")}
+				}
+			}
+		}(namedWork)
+	}
+
+	go func() {
+		wg.Wait()
+		close(finished)
+	}()
+
+RUNLOOP:
+	for {
+		select {
+		case namedError := <-namedErrorChan:
+			errors = append(errors, namedError)
+			cancel()
+		case <-finished:
+			// in this case, we have stopped processing all our background processes so we can exit
+			break RUNLOOP
+		}
+	}
 
 	// cleanup
 	for i := len(d.namedWorkers) - 1; i >= 0; i-- {
