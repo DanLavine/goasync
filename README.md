@@ -9,6 +9,10 @@ single purpose units of work.
 go get -u github.com/DanLavine/goasync
 ```
 
+# Examples
+
+For a few simple and basic real world example check out the `internal/examples` dir
+
 # Running tests
 
 To run all tests:
