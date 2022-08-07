@@ -23,13 +23,9 @@ func RepeatTimer(repeatTime time.Duration, task goasync.Task) *repeatTimer {
 	}
 }
 
-func (r *repeatTimer) Initialize() error {
-	return r.subTask.Initialize()
-}
-
-func (r *repeatTimer) Cleanup() error {
-	return r.subTask.Cleanup()
-}
+// passthough init and cleanup
+func (r *repeatTimer) Initialize() error { return r.subTask.Initialize() }
+func (r *repeatTimer) Cleanup() error    { return r.subTask.Cleanup() }
 
 func (r *repeatTimer) Execute(ctx context.Context) error {
 	ticker := time.NewTicker(r.repeatTime)

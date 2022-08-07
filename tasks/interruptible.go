@@ -28,13 +28,9 @@ func Interruptible(signals []os.Signal, task goasync.Task) *interruptible {
 	}
 }
 
-func (i *interruptible) Initialize() error {
-	return i.subTask.Initialize()
-}
-
-func (i *interruptible) Cleanup() error {
-	return i.subTask.Cleanup()
-}
+// passthrough init and cleanup
+func (i *interruptible) Initialize() error { return i.subTask.Initialize() }
+func (i *interruptible) Cleanup() error    { return i.subTask.Cleanup() }
 
 func (i *interruptible) Execute(ctx context.Context) error {
 	for {

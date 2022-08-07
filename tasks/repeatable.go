@@ -19,13 +19,9 @@ func Repeatable(task goasync.Task) *repeatable {
 	}
 }
 
-func (r *repeatable) Initialize() error {
-	return r.callback.Initialize()
-}
-
-func (r *repeatable) Cleanup() error {
-	return r.callback.Cleanup()
-}
+// passthrough init and cleanup
+func (r *repeatable) Initialize() error { return r.callback.Initialize() }
+func (r *repeatable) Cleanup() error    { return r.callback.Cleanup() }
 
 func (r *repeatable) Execute(ctx context.Context) error {
 	for {
