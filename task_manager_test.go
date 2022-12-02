@@ -11,7 +11,79 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestDrector_Run_Initializes_Tasks_InOrderTheyWereAdded(t *testing.T) {
+func TestManager_AddTask_ReturnsAnErrorIfAlreadyShutDown(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	fakeTask1 := &goasyncfakes.FakeTask{}
+
+	director := goasync.NewTaskManager()
+	// don't care about any of these errors
+	_ = director.Run(context.Background())
+
+	err := director.AddTask("task1", fakeTask1)
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err.Error()).To(Equal("Task Manager has already shutdown. Will not manage task"))
+}
+
+func TestManager_AddTask_ReturnsAnErrorIfAlreadyRunning(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	fakeTask1 := &goasyncfakes.FakeTask{}
+	fakeTask1Start := make(chan struct{})
+	fakeTask1.InitializeStub = func() error {
+		fakeTask1Start <- struct{}{}
+
+		<-fakeTask1Start
+		return nil
+	}
+	fakeTask2 := &goasyncfakes.FakeTask{}
+
+	director := goasync.NewTaskManager()
+	director.AddTask("task1", fakeTask1)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	errs := make(chan []goasync.NamedError)
+	go func() {
+		errs <- director.Run(ctx)
+	}()
+
+	g.Eventually(fakeTask1Start).Should(Receive())
+	err := director.AddTask("task2", fakeTask2)
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err.Error()).To(Equal("Task Manager is already running. Will not manage task"))
+	cancel()
+
+	g.Expect(fakeTask1.InitializeCallCount()).To(Equal(1))
+	g.Expect(fakeTask2.InitializeCallCount()).To(Equal(0))
+	close(fakeTask1Start)
+
+	g.Eventually(errs).Should(Receive(BeNil()))
+}
+
+func TestManager_AddRunningTask_ReturnsAnIfAlreadyShutdown(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	fakeTask1 := &goasyncfakes.FakeTask{}
+	director := goasync.NewTaskManager()
+
+	err := director.AddRunningTask("task1", fakeTask1)
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err.Error()).To(Equal("Task Manager is not yet running. Will not manage task"))
+}
+
+func TestManager_AddRunningTask_ReturnsAnErrorIfNotYetRunning(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	director := goasync.NewTaskManager()
+	_ = director.Run(context.Background()) // don't care about any of these errors
+
+	fakeTask1 := &goasyncfakes.FakeTask{}
+	err := director.AddRunningTask("task1", fakeTask1)
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err.Error()).To(Equal("Task Manager has already shutdown. Will not manage task"))
+}
+
+func TestManager_Run_Initializes_Tasks_InOrderTheyWereAdded(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	fakeTask1 := &goasyncfakes.FakeTask{}
@@ -41,7 +113,7 @@ func TestDrector_Run_Initializes_Tasks_InOrderTheyWereAdded(t *testing.T) {
 	g.Eventually(errs).Should(Receive(BeNil()))
 }
 
-func TestDrector_Run_Initalize_Error_CallsCleanup_InReverseOrder(t *testing.T) {
+func TestManager_Run_Initalize_Error_CallsCleanup_InReverseOrder(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	fakeTask2Done := make(chan struct{})
@@ -84,7 +156,7 @@ func TestDrector_Run_Initalize_Error_CallsCleanup_InReverseOrder(t *testing.T) {
 	g.Eventually(errs).Should(Receive(Equal([]goasync.NamedError{{TaskName: "task3", Stage: goasync.Initialize, Err: fmt.Errorf("failed to initialize")}, {TaskName: "task3", Stage: goasync.Cleanup, Err: fmt.Errorf("failed to cleanup")}})))
 }
 
-func TestDrector_Run_Tasks_CancelsOnTheContext(t *testing.T) {
+func TestManager_Run_Tasks_CancelsOnTheContext(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	fakeTask1 := &goasyncfakes.FakeTask{}
@@ -107,7 +179,7 @@ func TestDrector_Run_Tasks_CancelsOnTheContext(t *testing.T) {
 	g.Eventually(errs).Should(Receive(BeNil()))
 }
 
-func TestDrector_Run_Tasks_FailureWillCancelOtherTasks(t *testing.T) {
+func TestManager_Run_Tasks_FailureWillCancelOtherTasks(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	fakeTask1 := &goasyncfakes.FakeTask{}
@@ -126,7 +198,7 @@ func TestDrector_Run_Tasks_FailureWillCancelOtherTasks(t *testing.T) {
 	g.Eventually(errs).Should(Receive(Equal([]goasync.NamedError{{TaskName: "task1", Stage: goasync.Execute, Err: fmt.Errorf("failed work")}})))
 }
 
-func TestDrector_Run_Tasks_UnexpectedReturnWillCancelOtherTasks(t *testing.T) {
+func TestManager_Run_Tasks_UnexpectedReturnWillCancelOtherTasks(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	fakeTask1 := &goasyncfakes.FakeTask{}
@@ -144,7 +216,39 @@ func TestDrector_Run_Tasks_UnexpectedReturnWillCancelOtherTasks(t *testing.T) {
 	g.Eventually(errs).Should(Receive(Equal([]goasync.NamedError{{TaskName: "task1", Stage: goasync.Execute, Err: fmt.Errorf("Unexpected shutdown for task process")}})))
 }
 
-func TestDrector_Run_Cleanup_Tasks_RunInReverseOrder(t *testing.T) {
+func TestManager_AddRunningTask_CanFailRunningTaskmanagerCorrectly(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	fakeTask1 := &goasyncfakes.FakeTask{}
+	fakeTask1Start := make(chan struct{})
+	fakeTask1.ExecuteStub = func(ctx context.Context) error {
+		fakeTask1Start <- struct{}{}
+
+		<-ctx.Done()
+		return nil
+	}
+	fakeTask2 := &goasyncfakes.FakeTask{}
+
+	director := goasync.NewTaskManager()
+	director.AddTask("task1", fakeTask1)
+
+	errs := make(chan []goasync.NamedError)
+	go func() {
+		errs <- director.Run(context.Background())
+	}()
+
+	g.Eventually(fakeTask1Start).Should(Receive())
+	err := director.AddRunningTask("task2", fakeTask2)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	g.Expect(fakeTask1.ExecuteCallCount()).To(Equal(1))
+	g.Eventually(fakeTask2.ExecuteCallCount).Should(Equal(1))
+	close(fakeTask1Start)
+
+	g.Eventually(errs).Should(Receive(Equal([]goasync.NamedError{{TaskName: "task2", Stage: goasync.Execute, Err: fmt.Errorf("Unexpected shutdown for task process")}})))
+}
+
+func TestManager_Run_Cleanup_Tasks_RunInReverseOrder(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	fakeTask1 := &goasyncfakes.FakeTask{}
