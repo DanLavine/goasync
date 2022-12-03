@@ -10,6 +10,8 @@ type taskManager struct {
 	doneOnce *sync.Once
 	done     chan struct{}
 
+	cfg Config
+
 	runningOnce *sync.Once
 	running     chan struct{}
 
@@ -24,7 +26,8 @@ type taskManager struct {
 	namedTasks []namedTask
 }
 
-func NewTaskManager() *taskManager {
+// Create a new task manager with a provided coniguration
+func NewTaskManager(config Config) *taskManager {
 	return &taskManager{
 		doneOnce: new(sync.Once),
 		done:     make(chan struct{}),
@@ -72,6 +75,7 @@ func (t *taskManager) AddRunningTask(name string, task RunningTask) error {
 			go func() {
 				defer t.tasks.Done()
 				err := task.Execute(t.ctx)
+
 				if err != nil {
 					select {
 					case t.namedErrorChan <- NamedError{TaskName: name, Stage: Execute, Err: err}:
@@ -186,8 +190,14 @@ func (t *taskManager) Run(ctx context.Context) []NamedError {
 			for {
 				select {
 				case namedError := <-t.namedErrorChan:
-					errors = append(errors, namedError)
-					cancel()
+					if !t.cfg.AllowExecuteFailures {
+						errors = append(errors, namedError)
+						cancel()
+					} else {
+						if t.cfg.ReportErrors {
+							errors = append(errors, namedError)
+						}
+					}
 				case <-t.done:
 					// in this case, we have stopped processing all our background processes so we can exit
 					break RUNLOOP
