@@ -32,7 +32,7 @@ func StrictConfig() Config {
 // and no errors will be reported
 func RelaxedConfig() Config {
 	return Config{
-		AllowExecuteFailures:    false,
+		AllowExecuteFailures:    true,
 		ReportErrors:            false,
 		AllowNoManagedProcesses: true,
 	}

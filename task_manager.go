@@ -32,6 +32,8 @@ func NewTaskManager(config Config) *taskManager {
 		doneOnce: new(sync.Once),
 		done:     make(chan struct{}),
 
+		cfg: config,
+
 		runningOnce: new(sync.Once),
 		running:     make(chan struct{}),
 
@@ -174,8 +176,8 @@ func (t *taskManager) Run(ctx context.Context) []NamedError {
 						case <-taskCtx.Done():
 							// nothing to do here since we are properly shutting down
 						default:
-							// unexpected shutdown for a task process. Initiate abort of all task processes
 							t.namedErrorChan <- NamedError{TaskName: namedTask.name, Stage: Execute, Err: fmt.Errorf("Unexpected shutdown for task process")}
+							// unexpected shutdown for a task process. Initiate abort of all task processes
 						}
 					}
 				}(namedWork)
@@ -197,13 +199,15 @@ func (t *taskManager) Run(ctx context.Context) []NamedError {
 			for {
 				select {
 				case namedError := <-t.namedErrorChan:
-					if !t.cfg.AllowExecuteFailures {
-						errors = append(errors, namedError)
-						cancel()
-					} else {
+					if t.cfg.AllowExecuteFailures {
+						// we are allowing execute failures, do don't cancel the task manager
 						if t.cfg.ReportErrors {
 							errors = append(errors, namedError)
 						}
+					} else {
+						// any error should be recored and fail the task manger since we do not allow for any errors
+						errors = append(errors, namedError)
+						cancel()
 					}
 				case <-t.done:
 					// in this case, we have stopped processing all our background processes so we can exit
