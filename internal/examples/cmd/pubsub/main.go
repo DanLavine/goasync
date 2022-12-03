@@ -21,7 +21,7 @@ func main() {
 	sub1 := pubsub.Subscriber("counter", broker)
 	sub2 := pubsub.Subscriber("counter", broker)
 
-	taskManger := goasync.NewTaskManager()
+	taskManger := goasync.NewTaskManager(goasync.StrictConfig())
 	taskManger.AddTask("broker", broker)
 	taskManger.AddTask("publisher", publisher)
 	taskManger.AddTask("subscriber 1", sub1)

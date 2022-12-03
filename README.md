@@ -55,3 +55,8 @@ If we want to run one specific test we can use:
 ```
 go test --race -run [NAME OF TEST] ./...
 ```
+
+To ignore the test cache:
+```
+go test --race -count=1 ./...
+```

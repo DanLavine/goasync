@@ -10,6 +10,8 @@ type taskManager struct {
 	doneOnce *sync.Once
 	done     chan struct{}
 
+	cfg Config
+
 	runningOnce *sync.Once
 	running     chan struct{}
 
@@ -24,10 +26,13 @@ type taskManager struct {
 	namedTasks []namedTask
 }
 
-func NewTaskManager() *taskManager {
+// Create a new task manager with a provided coniguration
+func NewTaskManager(config Config) *taskManager {
 	return &taskManager{
 		doneOnce: new(sync.Once),
 		done:     make(chan struct{}),
+
+		cfg: config,
 
 		runningOnce: new(sync.Once),
 		running:     make(chan struct{}),
@@ -72,6 +77,7 @@ func (t *taskManager) AddRunningTask(name string, task RunningTask) error {
 			go func() {
 				defer t.tasks.Done()
 				err := task.Execute(t.ctx)
+
 				if err != nil {
 					select {
 					case t.namedErrorChan <- NamedError{TaskName: name, Stage: Execute, Err: err}:
@@ -170,14 +176,21 @@ func (t *taskManager) Run(ctx context.Context) []NamedError {
 						case <-taskCtx.Done():
 							// nothing to do here since we are properly shutting down
 						default:
-							// unexpected shutdown for a task process. Initiate abort of all task processes
 							t.namedErrorChan <- NamedError{TaskName: namedTask.name, Stage: Execute, Err: fmt.Errorf("Unexpected shutdown for task process")}
+							// unexpected shutdown for a task process. Initiate abort of all task processes
 						}
 					}
 				}(namedWork)
 			}
 
 			go func() {
+				if t.cfg.AllowNoManagedProcesses {
+					// need to wait for the original context to close. Or a failure is  shutting down
+					// the server and we need to shutdown
+					<-taskCtx.Done()
+				}
+
+				// in both cases, we still want for all tasks to finish draining
 				t.tasks.Wait()
 				t.closeDone()
 			}()
@@ -186,8 +199,16 @@ func (t *taskManager) Run(ctx context.Context) []NamedError {
 			for {
 				select {
 				case namedError := <-t.namedErrorChan:
-					errors = append(errors, namedError)
-					cancel()
+					if t.cfg.AllowExecuteFailures {
+						// we are allowing execute failures, do don't cancel the task manager
+						if t.cfg.ReportErrors {
+							errors = append(errors, namedError)
+						}
+					} else {
+						// any error should be recored and fail the task manger since we do not allow for any errors
+						errors = append(errors, namedError)
+						cancel()
+					}
 				case <-t.done:
 					// in this case, we have stopped processing all our background processes so we can exit
 					break RUNLOOP
