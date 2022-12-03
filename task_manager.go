@@ -182,6 +182,13 @@ func (t *taskManager) Run(ctx context.Context) []NamedError {
 			}
 
 			go func() {
+				if t.cfg.AllowNoManagedProcesses {
+					// need to wait for the original context to close. Or a failure is  shutting down
+					// the server and we need to shutdown
+					<-taskCtx.Done()
+				}
+
+				// in both cases, we still want for all tasks to finish draining
 				t.tasks.Wait()
 				t.closeDone()
 			}()
