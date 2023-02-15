@@ -22,10 +22,10 @@ func Running(started chan struct{}) *running {
 	}
 }
 
-func (r *running) Initialize() error { return fs.subTask.Initialize() }
-func (r *running) Cleanup() error    { return fs.subTask.Cleanup() }
+func (r *running) Initialize() error { return nil }
+func (r *running) Cleanup() error    { return nil }
 func (r *running) Execute(ctx context.Context) error {
 	close(r.started)
 
-	return
+	return nil
 }
