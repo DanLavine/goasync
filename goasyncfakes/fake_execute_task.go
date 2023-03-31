@@ -8,7 +8,7 @@ import (
 	"github.com/DanLavine/goasync"
 )
 
-type FakeRunningTask struct {
+type FakeExecuteTask struct {
 	ExecuteStub        func(context.Context) error
 	executeMutex       sync.RWMutex
 	executeArgsForCall []struct {
@@ -24,7 +24,7 @@ type FakeRunningTask struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeRunningTask) Execute(arg1 context.Context) error {
+func (fake *FakeExecuteTask) Execute(arg1 context.Context) error {
 	fake.executeMutex.Lock()
 	ret, specificReturn := fake.executeReturnsOnCall[len(fake.executeArgsForCall)]
 	fake.executeArgsForCall = append(fake.executeArgsForCall, struct {
@@ -43,26 +43,26 @@ func (fake *FakeRunningTask) Execute(arg1 context.Context) error {
 	return fakeReturns.result1
 }
 
-func (fake *FakeRunningTask) ExecuteCallCount() int {
+func (fake *FakeExecuteTask) ExecuteCallCount() int {
 	fake.executeMutex.RLock()
 	defer fake.executeMutex.RUnlock()
 	return len(fake.executeArgsForCall)
 }
 
-func (fake *FakeRunningTask) ExecuteCalls(stub func(context.Context) error) {
+func (fake *FakeExecuteTask) ExecuteCalls(stub func(context.Context) error) {
 	fake.executeMutex.Lock()
 	defer fake.executeMutex.Unlock()
 	fake.ExecuteStub = stub
 }
 
-func (fake *FakeRunningTask) ExecuteArgsForCall(i int) context.Context {
+func (fake *FakeExecuteTask) ExecuteArgsForCall(i int) context.Context {
 	fake.executeMutex.RLock()
 	defer fake.executeMutex.RUnlock()
 	argsForCall := fake.executeArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeRunningTask) ExecuteReturns(result1 error) {
+func (fake *FakeExecuteTask) ExecuteReturns(result1 error) {
 	fake.executeMutex.Lock()
 	defer fake.executeMutex.Unlock()
 	fake.ExecuteStub = nil
@@ -71,7 +71,7 @@ func (fake *FakeRunningTask) ExecuteReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeRunningTask) ExecuteReturnsOnCall(i int, result1 error) {
+func (fake *FakeExecuteTask) ExecuteReturnsOnCall(i int, result1 error) {
 	fake.executeMutex.Lock()
 	defer fake.executeMutex.Unlock()
 	fake.ExecuteStub = nil
@@ -85,7 +85,7 @@ func (fake *FakeRunningTask) ExecuteReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeRunningTask) Invocations() map[string][][]interface{} {
+func (fake *FakeExecuteTask) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.executeMutex.RLock()
@@ -97,7 +97,7 @@ func (fake *FakeRunningTask) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeRunningTask) recordInvocation(key string, args []interface{}) {
+func (fake *FakeExecuteTask) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -109,4 +109,4 @@ func (fake *FakeRunningTask) recordInvocation(key string, args []interface{}) {
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ goasync.RunningTask = new(FakeRunningTask)
+var _ goasync.ExecuteTask = new(FakeExecuteTask)

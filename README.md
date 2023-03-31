@@ -14,20 +14,29 @@ For the Task Manager to operate, each task must follow a specific number of rule
 3. When the Task Manager's context is canceled, each task process will have their context canceled
 4. Each Task's Cleanup function is called in reverse order they were added to the Task Manager
 
-Lastly any tasks can be added to the Task Manager as long as they follow the Task interface:
+Lastly any tasks can be added to the Task Manager as long as they follow one of the Task interface:
 ```
+// A Task is anything that can be managed by the TaskManager and added before the taskmanager
+// start running. Any errors will cause the process to exit as all tasks are expected to run without erros
 type Task interface {
 	// Initializate functions are ran serially in the order they were added to the TaskManager.
 	// These are useful when one Goroutine dependency requires a previous Worker to setup some common
-	// dependency like a DB connection.
+	// dendency like a DB connection.
 	Initialize() error
 
 	// Execute is the main Async function to house all the multi-threaded logic handled by GoAsync.
 	Execute(ctx context.Context) error
 
-	// Clenup functions are ran serially in reverse order they were added to the Task Manager.
+	// Clenup functions are ran serially in reverse order they were added to the TaskManager.
 	// This way the 1st Initialze dependency is stopped last
 	Cleanup() error
+}
+
+// A ExecuteTask can be added to a Task Manager before or after it has already started managin the tasks.
+// These tasks are expected to already be properly Initialized and don't require any Cleanup Code.
+type ExecuteTask interface {
+	// Execute is the main Async function to house all the multi-threaded logic handled by GoAsync.
+	Execute(ctx context.Context) error
 }
 ```
 

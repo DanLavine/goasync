@@ -18,8 +18,8 @@ func main() {
 
 	broker := pubsub.Broker()
 	publisher := pubsub.Publisher("counter", broker)
-	sub1 := pubsub.Subscriber("counter", broker)
-	sub2 := pubsub.Subscriber("counter", broker)
+	sub1 := pubsub.Subscriber("sub1", "counter", broker)
+	sub2 := pubsub.Subscriber("sub2", "counter", broker)
 
 	taskManger := goasync.NewTaskManager(goasync.StrictConfig())
 	taskManger.AddTask("broker", broker)

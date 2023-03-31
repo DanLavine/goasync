@@ -60,25 +60,14 @@ func TestManager_AddTask_ReturnsAnErrorIfAlreadyRunning(t *testing.T) {
 	g.Eventually(errs).Should(Receive(BeNil()))
 }
 
-func TestManager_AddRunningTask_ReturnsAnIfAlreadyShutdown(t *testing.T) {
-	g := NewGomegaWithT(t)
-
-	fakeTask1 := &goasyncfakes.FakeTask{}
-	director := goasync.NewTaskManager(goasync.StrictConfig())
-
-	err := director.AddRunningTask("task1", fakeTask1)
-	g.Expect(err).To(HaveOccurred())
-	g.Expect(err.Error()).To(Equal("Task Manager is not yet running. Will not manage task"))
-}
-
-func TestManager_AddRunningTask_ReturnsAnErrorIfNotYetRunning(t *testing.T) {
+func TestManager_AddExecuteTask_ReturnsAnErrorIfTaskManagerHasAlreadyShutdown(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	director := goasync.NewTaskManager(goasync.StrictConfig())
 	_ = director.Run(context.Background()) // don't care about any of these errors
 
 	fakeTask1 := &goasyncfakes.FakeTask{}
-	err := director.AddRunningTask("task1", fakeTask1)
+	err := director.AddExecuteTask("task1", fakeTask1)
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err.Error()).To(Equal("Task Manager has already shutdown. Will not manage task"))
 }
@@ -361,7 +350,30 @@ func TestManager_Run_Tasks_UnexpectedReturnWillCancelOtherTasks(t *testing.T) {
 	g.Eventually(errs).Should(Receive(Equal([]goasync.NamedError{{TaskName: "task1", Stage: goasync.Execute, Err: fmt.Errorf("Unexpected shutdown for task process")}})))
 }
 
-func TestManager_AddRunningTask_CanFailRunningTaskmanagerCorrectly(t *testing.T) {
+func TestManager_AddExecuteTask_CanBeAddedBeforeStaringTheTaskManager(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	fakeTask1 := &goasyncfakes.FakeTask{}
+	fakeTask1Start := make(chan struct{})
+	fakeTask1.ExecuteStub = func(ctx context.Context) error {
+		fakeTask1Start <- struct{}{}
+		return nil
+	}
+
+	director := goasync.NewTaskManager(goasync.StrictConfig())
+	err := director.AddExecuteTask("task1", fakeTask1)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	errs := make(chan []goasync.NamedError)
+	go func() {
+		errs <- director.Run(context.Background())
+	}()
+
+	g.Eventually(fakeTask1Start).Should(Receive())
+	g.Eventually(errs).Should(Receive(Equal([]goasync.NamedError{{TaskName: "task1", Stage: goasync.Execute, Err: fmt.Errorf("Unexpected shutdown for task process")}})))
+}
+
+func TestManager_AddExecuteTask_CanFailExecuteTaskmanagerCorrectly(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	fakeTask1 := &goasyncfakes.FakeTask{}
@@ -383,7 +395,7 @@ func TestManager_AddRunningTask_CanFailRunningTaskmanagerCorrectly(t *testing.T)
 	}()
 
 	g.Eventually(fakeTask1Start).Should(Receive())
-	err := director.AddRunningTask("task2", fakeTask2)
+	err := director.AddExecuteTask("task2", fakeTask2)
 	g.Expect(err).ToNot(HaveOccurred())
 
 	g.Expect(fakeTask1.ExecuteCallCount()).To(Equal(1))

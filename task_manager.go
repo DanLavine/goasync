@@ -21,12 +21,19 @@ type taskManager struct {
 	// context created after Run() is called. This is used to manage all threads
 	ctx context.Context
 
-	tasks      *sync.WaitGroup
-	taskLock   *sync.Mutex
-	namedTasks []namedTask
+	tasks        *sync.WaitGroup
+	taskLock     *sync.Mutex
+	namedTasks   []namedTask
+	executeTasks []executeTask
 }
 
-// Create a new task manager with a provided coniguration
+// Create a new task manager for async tasks
+//
+// PARAMS:
+// * config - configuration to use. Handles error reporting and use cases for terminating the managed tasks
+//
+// RETURNS:
+// * *taskManager - configured task manager
 func NewTaskManager(config Config) *taskManager {
 	return &taskManager{
 		doneOnce: new(sync.Once),
@@ -44,7 +51,15 @@ func NewTaskManager(config Config) *taskManager {
 	}
 }
 
-// Add a task to the TaskManager. Calling this before Run
+// Add a task to the TaskManager. All tasks added this way must be called
+// before the Run(...) function so their Inintialize() function can be called properly
+//
+// PARAMS:
+// * name - name of the task. On any errors this will be reported with the name
+// * task - task to be managed
+//
+// REETURNS
+// * error - any errors when adding the task to be managed
 func (t *taskManager) AddTask(name string, task Task) error {
 	t.taskLock.Lock()
 	defer t.taskLock.Unlock()
@@ -64,8 +79,18 @@ func (t *taskManager) AddTask(name string, task Task) error {
 	}
 }
 
-// AddRunning Task can be used to add a new task to an already running Taskmanger.
-func (t *taskManager) AddRunningTask(name string, task RunningTask) error {
+// AddExecuteTask can be used to add a new task to the Taskmanger before or after it is already running
+//
+// PARAMS:
+// * name - name of the task. On any errors this will be reported with the name
+// * task - task to be managed
+//
+// REETURNS
+// * error - any errors when adding the task to be managed
+func (t *taskManager) AddExecuteTask(name string, task ExecuteTask) error {
+	t.taskLock.Lock()
+	defer t.taskLock.Unlock()
+
 	select {
 	case <-t.done:
 		return fmt.Errorf("Task Manager has already shutdown. Will not manage task")
@@ -96,12 +121,12 @@ func (t *taskManager) AddRunningTask(name string, task RunningTask) error {
 					}
 				}
 			}()
-
-			return nil
 		default:
-			return fmt.Errorf("Task Manager is not yet running. Will not manage task")
+			t.executeTasks = append(t.executeTasks, executeTask{name: name, task: task})
 		}
 	}
+
+	return nil
 }
 
 // Run any tasks added to the TaskManager.
@@ -109,16 +134,22 @@ func (t *taskManager) AddRunningTask(name string, task RunningTask) error {
 // Rules for Tasks (added before Run):
 //  1. Run each Initialize process serially in the order they were added to the TaskManager
 //     a. If an error occurs, stop Initializng any remaning tasks. Also Run Cleanup for
-//     any already tasks that have been Initialized
+//     any tasks that have been Initialized
 //  2. In Parallel Run all Execute(...) functions for any tasks
 //     a. All tasks are expected to run and not error.
 //     b. If any tasks return an error, the TaskManager will cancel all running tasks and then
-//     run the Cleanup for each task.
-//  3. Once Stop is called for the TaskManager each task process will have their context canceled
+//     run the Cleanup for each task if configured to do so.
+//  3. Once the context ic canceled, each task process will have their context canceled
 //  4. Each Task's Cleanup function is called in reverse order they were added to the TaskManager
 //
 // Rules for adding tasks (added after Run):
-//  1. These tasks will also cause the Task Manager to shutdown if an error is encountered
+//  1. These tasks will also cause the Task Manager to shutdown if an error is encountered if configured to do so
+//
+// PARAMS:
+// * ctx - context to stop the TaskManager
+//
+// RETURNS:
+// * []NamedError - slice of errors with the name of the failed task
 func (t *taskManager) Run(ctx context.Context) []NamedError {
 	var errors []NamedError
 
@@ -139,7 +170,7 @@ func (t *taskManager) Run(ctx context.Context) []NamedError {
 				{Err: fmt.Errorf("task manager is already running. Will not run again")},
 			}
 		default:
-			// setup for AddRunningTask to ensure that can run properly
+			// setup for AddExecuteTask to ensure that can run properly
 			taskCtx, cancel := context.WithCancel(ctx)
 			t.ctx = taskCtx
 			t.closeRunning()
@@ -176,11 +207,32 @@ func (t *taskManager) Run(ctx context.Context) []NamedError {
 						case <-taskCtx.Done():
 							// nothing to do here since we are properly shutting down
 						default:
-							t.namedErrorChan <- NamedError{TaskName: namedTask.name, Stage: Execute, Err: fmt.Errorf("Unexpected shutdown for task process")}
 							// unexpected shutdown for a task process. Initiate abort of all task processes
+							t.namedErrorChan <- NamedError{TaskName: namedTask.name, Stage: Execute, Err: fmt.Errorf("Unexpected shutdown for task process")}
 						}
 					}
 				}(namedWork)
+			}
+
+			// start all execute tasks
+			for _, executeWork := range t.executeTasks {
+				t.tasks.Add(1)
+				go func(executeTask executeTask) {
+					defer t.tasks.Done()
+
+					err := executeTask.task.Execute(taskCtx)
+					if err != nil {
+						t.namedErrorChan <- NamedError{TaskName: executeTask.name, Stage: Execute, Err: err}
+					} else {
+						select {
+						case <-taskCtx.Done():
+							// nothing to do here since we are properly shutting down
+						default:
+							// unexpected shutdown for a task process. Initiate abort of all task processes
+							t.namedErrorChan <- NamedError{TaskName: executeTask.name, Stage: Execute, Err: fmt.Errorf("Unexpected shutdown for task process")}
+						}
+					}
+				}(executeWork)
 			}
 
 			go func() {

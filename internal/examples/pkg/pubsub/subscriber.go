@@ -7,14 +7,16 @@ import (
 )
 
 type subscriber struct {
+	name    string
 	channel string
 	broker  *broker
 
 	messageQueue <-chan interface{}
 }
 
-func Subscriber(channel string, broker *broker) *subscriber {
+func Subscriber(name string, channel string, broker *broker) *subscriber {
 	return &subscriber{
+		name:    name,
 		channel: channel,
 		broker:  broker,
 	}
@@ -46,7 +48,7 @@ func (s *subscriber) Execute(ctx context.Context) error {
 				}
 			}
 
-			fmt.Printf("received message: %v\n", message)
+			fmt.Printf("%s received message: %v\n", s.name, message)
 
 			// sleep longer than the publisher to ensure we build a buffer and drain everything!
 			time.Sleep(2 * time.Second)

@@ -12,7 +12,7 @@ type TaskManager interface {
 	AddTask(name string, task Task) error
 
 	// add a task to an already running task manager
-	AddRunningTask(name string, task RunningTask) error
+	AddExecuteTask(name string, task ExecuteTask) error
 
 	// run the task manager
 	Run(context context.Context) []NamedError
@@ -36,11 +36,11 @@ type Task interface {
 	Cleanup() error
 }
 
-// A RunningTask can be added to a Task Manager after it has already started managin the tasks.
+// A ExecuteTask can be added to a Task Manager before or after it has already started managin the tasks.
 // These tasks are expected to already be properly Initialized and don't require any Cleanup Code.
 //
-//counterfeiter:generate . RunningTask
-type RunningTask interface {
+//counterfeiter:generate . ExecuteTask
+type ExecuteTask interface {
 	// Execute is the main Async function to house all the multi-threaded logic handled by GoAsync.
 	Execute(ctx context.Context) error
 }
@@ -48,4 +48,9 @@ type RunningTask interface {
 type namedTask struct {
 	name string
 	task Task
+}
+
+type executeTask struct {
+	name string
+	task ExecuteTask
 }

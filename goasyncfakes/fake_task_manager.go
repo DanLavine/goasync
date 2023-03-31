@@ -9,16 +9,16 @@ import (
 )
 
 type FakeTaskManager struct {
-	AddRunningTaskStub        func(string, goasync.RunningTask) error
-	addRunningTaskMutex       sync.RWMutex
-	addRunningTaskArgsForCall []struct {
+	AddExecuteTaskStub        func(string, goasync.ExecuteTask) error
+	addExecuteTaskMutex       sync.RWMutex
+	addExecuteTaskArgsForCall []struct {
 		arg1 string
-		arg2 goasync.RunningTask
+		arg2 goasync.ExecuteTask
 	}
-	addRunningTaskReturns struct {
+	addExecuteTaskReturns struct {
 		result1 error
 	}
-	addRunningTaskReturnsOnCall map[int]struct {
+	addExecuteTaskReturnsOnCall map[int]struct {
 		result1 error
 	}
 	AddTaskStub        func(string, goasync.Task) error
@@ -48,17 +48,17 @@ type FakeTaskManager struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeTaskManager) AddRunningTask(arg1 string, arg2 goasync.RunningTask) error {
-	fake.addRunningTaskMutex.Lock()
-	ret, specificReturn := fake.addRunningTaskReturnsOnCall[len(fake.addRunningTaskArgsForCall)]
-	fake.addRunningTaskArgsForCall = append(fake.addRunningTaskArgsForCall, struct {
+func (fake *FakeTaskManager) AddExecuteTask(arg1 string, arg2 goasync.ExecuteTask) error {
+	fake.addExecuteTaskMutex.Lock()
+	ret, specificReturn := fake.addExecuteTaskReturnsOnCall[len(fake.addExecuteTaskArgsForCall)]
+	fake.addExecuteTaskArgsForCall = append(fake.addExecuteTaskArgsForCall, struct {
 		arg1 string
-		arg2 goasync.RunningTask
+		arg2 goasync.ExecuteTask
 	}{arg1, arg2})
-	stub := fake.AddRunningTaskStub
-	fakeReturns := fake.addRunningTaskReturns
-	fake.recordInvocation("AddRunningTask", []interface{}{arg1, arg2})
-	fake.addRunningTaskMutex.Unlock()
+	stub := fake.AddExecuteTaskStub
+	fakeReturns := fake.addExecuteTaskReturns
+	fake.recordInvocation("AddExecuteTask", []interface{}{arg1, arg2})
+	fake.addExecuteTaskMutex.Unlock()
 	if stub != nil {
 		return stub(arg1, arg2)
 	}
@@ -68,44 +68,44 @@ func (fake *FakeTaskManager) AddRunningTask(arg1 string, arg2 goasync.RunningTas
 	return fakeReturns.result1
 }
 
-func (fake *FakeTaskManager) AddRunningTaskCallCount() int {
-	fake.addRunningTaskMutex.RLock()
-	defer fake.addRunningTaskMutex.RUnlock()
-	return len(fake.addRunningTaskArgsForCall)
+func (fake *FakeTaskManager) AddExecuteTaskCallCount() int {
+	fake.addExecuteTaskMutex.RLock()
+	defer fake.addExecuteTaskMutex.RUnlock()
+	return len(fake.addExecuteTaskArgsForCall)
 }
 
-func (fake *FakeTaskManager) AddRunningTaskCalls(stub func(string, goasync.RunningTask) error) {
-	fake.addRunningTaskMutex.Lock()
-	defer fake.addRunningTaskMutex.Unlock()
-	fake.AddRunningTaskStub = stub
+func (fake *FakeTaskManager) AddExecuteTaskCalls(stub func(string, goasync.ExecuteTask) error) {
+	fake.addExecuteTaskMutex.Lock()
+	defer fake.addExecuteTaskMutex.Unlock()
+	fake.AddExecuteTaskStub = stub
 }
 
-func (fake *FakeTaskManager) AddRunningTaskArgsForCall(i int) (string, goasync.RunningTask) {
-	fake.addRunningTaskMutex.RLock()
-	defer fake.addRunningTaskMutex.RUnlock()
-	argsForCall := fake.addRunningTaskArgsForCall[i]
+func (fake *FakeTaskManager) AddExecuteTaskArgsForCall(i int) (string, goasync.ExecuteTask) {
+	fake.addExecuteTaskMutex.RLock()
+	defer fake.addExecuteTaskMutex.RUnlock()
+	argsForCall := fake.addExecuteTaskArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeTaskManager) AddRunningTaskReturns(result1 error) {
-	fake.addRunningTaskMutex.Lock()
-	defer fake.addRunningTaskMutex.Unlock()
-	fake.AddRunningTaskStub = nil
-	fake.addRunningTaskReturns = struct {
+func (fake *FakeTaskManager) AddExecuteTaskReturns(result1 error) {
+	fake.addExecuteTaskMutex.Lock()
+	defer fake.addExecuteTaskMutex.Unlock()
+	fake.AddExecuteTaskStub = nil
+	fake.addExecuteTaskReturns = struct {
 		result1 error
 	}{result1}
 }
 
-func (fake *FakeTaskManager) AddRunningTaskReturnsOnCall(i int, result1 error) {
-	fake.addRunningTaskMutex.Lock()
-	defer fake.addRunningTaskMutex.Unlock()
-	fake.AddRunningTaskStub = nil
-	if fake.addRunningTaskReturnsOnCall == nil {
-		fake.addRunningTaskReturnsOnCall = make(map[int]struct {
+func (fake *FakeTaskManager) AddExecuteTaskReturnsOnCall(i int, result1 error) {
+	fake.addExecuteTaskMutex.Lock()
+	defer fake.addExecuteTaskMutex.Unlock()
+	fake.AddExecuteTaskStub = nil
+	if fake.addExecuteTaskReturnsOnCall == nil {
+		fake.addExecuteTaskReturnsOnCall = make(map[int]struct {
 			result1 error
 		})
 	}
-	fake.addRunningTaskReturnsOnCall[i] = struct {
+	fake.addExecuteTaskReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -236,8 +236,8 @@ func (fake *FakeTaskManager) RunReturnsOnCall(i int, result1 []goasync.NamedErro
 func (fake *FakeTaskManager) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.addRunningTaskMutex.RLock()
-	defer fake.addRunningTaskMutex.RUnlock()
+	fake.addExecuteTaskMutex.RLock()
+	defer fake.addExecuteTaskMutex.RUnlock()
 	fake.addTaskMutex.RLock()
 	defer fake.addTaskMutex.RUnlock()
 	fake.runMutex.RLock()
