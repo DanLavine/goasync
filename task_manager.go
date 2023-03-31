@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-type taskManager struct {
+type TaskManager struct {
 	doneOnce *sync.Once
 	done     chan struct{}
 
@@ -33,9 +33,9 @@ type taskManager struct {
 // * config - configuration to use. Handles error reporting and use cases for terminating the managed tasks
 //
 // RETURNS:
-// * *taskManager - configured task manager
-func NewTaskManager(config Config) *taskManager {
-	return &taskManager{
+// * *TaskManager - configured task manager
+func NewTaskManager(config Config) *TaskManager {
+	return &TaskManager{
 		doneOnce: new(sync.Once),
 		done:     make(chan struct{}),
 
@@ -60,7 +60,7 @@ func NewTaskManager(config Config) *taskManager {
 //
 // REETURNS
 // * error - any errors when adding the task to be managed
-func (t *taskManager) AddTask(name string, task Task) error {
+func (t *TaskManager) AddTask(name string, task Task) error {
 	t.taskLock.Lock()
 	defer t.taskLock.Unlock()
 
@@ -87,7 +87,7 @@ func (t *taskManager) AddTask(name string, task Task) error {
 //
 // REETURNS
 // * error - any errors when adding the task to be managed
-func (t *taskManager) AddExecuteTask(name string, task ExecuteTask) error {
+func (t *TaskManager) AddExecuteTask(name string, task ExecuteTask) error {
 	t.taskLock.Lock()
 	defer t.taskLock.Unlock()
 
@@ -150,7 +150,7 @@ func (t *taskManager) AddExecuteTask(name string, task ExecuteTask) error {
 //
 // RETURNS:
 // * []NamedError - slice of errors with the name of the failed task
-func (t *taskManager) Run(ctx context.Context) []NamedError {
+func (t *TaskManager) Run(ctx context.Context) []NamedError {
 	var errors []NamedError
 
 	t.taskLock.Lock()
@@ -279,13 +279,13 @@ func (t *taskManager) Run(ctx context.Context) []NamedError {
 	}
 }
 
-func (t *taskManager) closeDone() {
+func (t *TaskManager) closeDone() {
 	t.doneOnce.Do(func() {
 		close(t.done)
 	})
 }
 
-func (t *taskManager) closeRunning() {
+func (t *TaskManager) closeRunning() {
 	t.runningOnce.Do(func() {
 		close(t.running)
 	})

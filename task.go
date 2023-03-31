@@ -4,10 +4,10 @@ import "context"
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 
-// TaskManager manages any number of tasks
+// AsyncTaskManager manages any number of tasks
 //
-//counterfeiter:generate . TaskManager
-type TaskManager interface {
+//counterfeiter:generate . AsyncTaskManager
+type AsyncTaskManager interface {
 	// Add a task before running the task manager
 	AddTask(name string, task Task) error
 
@@ -18,12 +18,12 @@ type TaskManager interface {
 	Run(context context.Context) []NamedError
 }
 
-// A Task is anything that can be managed by the TaskManager and added before the taskmanager
+// A Task is anything that can be managed by the AsyncTaskManager and added before the taskmanager
 // start running. Any errors will cause the process to exit as all tasks are expected to run without erros
 //
 //counterfeiter:generate . Task
 type Task interface {
-	// Initializate functions are ran serially in the order they were added to the TaskManager.
+	// Initializate functions are ran serially in the order they were added to the AsyncTaskManager.
 	// These are useful when one Goroutine dependency requires a previous Worker to setup some common
 	// dendency like a DB connection.
 	Initialize() error
@@ -31,7 +31,7 @@ type Task interface {
 	// Execute is the main Async function to house all the multi-threaded logic handled by GoAsync.
 	Execute(ctx context.Context) error
 
-	// Clenup functions are ran serially in reverse order they were added to the TaskManager.
+	// Clenup functions are ran serially in reverse order they were added to the AsyncTaskManager.
 	// This way the 1st Initialze dependency is stopped last
 	Cleanup() error
 }
