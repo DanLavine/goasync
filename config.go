@@ -28,8 +28,7 @@ func StrictConfig() Config {
 	}
 }
 
-// Default configuration that allows tasks stop executing without a failure
-// and no errors will be reported
+// Default configuration that allows tasks stop executing without a failure and no errors will be reported
 func RelaxedConfig() Config {
 	return Config{
 		AllowExecuteFailures:    true,

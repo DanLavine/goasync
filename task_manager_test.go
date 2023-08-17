@@ -11,6 +11,18 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+func TestManager_AddTask_ReturnsAnErrorIfTheTaskIsNil(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	director := goasync.NewTaskManager(goasync.StrictConfig())
+	// don't care about any of these errors
+	_ = director.Run(context.Background())
+
+	err := director.AddTask("task1", nil)
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err.Error()).To(Equal("task cannot be nil"))
+}
+
 func TestManager_AddTask_ReturnsAnErrorIfAlreadyShutDown(t *testing.T) {
 	g := NewGomegaWithT(t)
 
