@@ -17,13 +17,16 @@ type TaskManager struct {
 	runningOnce *sync.Once
 	running     chan struct{}
 
+	tasksCounter   int
+	addTaskChan    chan struct{}
+	removeTaskChan chan struct{}
+
 	// chan any tasks that are running can report an error on
-	namedErrorChan chan NamedError
+	namedErrorChan chan *NamedError
 
 	// context created after Run() is called. This is used to manage all threads
 	ctx context.Context
 
-	tasks        *sync.WaitGroup
 	taskLock     *sync.Mutex
 	namedTasks   []namedTask
 	executeTasks []executeTask
@@ -46,9 +49,12 @@ func NewTaskManager(config Config) *TaskManager {
 		runningOnce: new(sync.Once),
 		running:     make(chan struct{}),
 
-		namedErrorChan: make(chan NamedError),
+		tasksCounter:   0,
+		addTaskChan:    make(chan struct{}),
+		removeTaskChan: make(chan struct{}),
 
-		tasks:    new(sync.WaitGroup),
+		namedErrorChan: make(chan *NamedError),
+
 		taskLock: new(sync.Mutex),
 	}
 }
@@ -104,29 +110,30 @@ func (t *TaskManager) AddExecuteTask(name string, task ExecuteTask) error {
 		select {
 		case <-t.running:
 			// Add a new threaded task
-			t.tasks.Add(1)
-			go func() {
-				defer t.tasks.Done()
-				err := task.Execute(t.ctx)
+			select {
+			case t.addTaskChan <- struct{}{}:
+				// // can still add a task
+				// t.addTaskChan <- struct{}{} // singnal that we are done adding the task
 
-				if err != nil {
-					select {
-					case t.namedErrorChan <- NamedError{TaskName: name, Stage: Execute, Err: err}:
-					case <-t.done:
-						// There is a very small race condition here where this might not be added. It can happen
-						// if a task fails at the same time this is added to be managed. So just be safe and cleanup
-						// this possible leaked thread and the error message will be lost. But I think thats fine since
-						// it wasn't the thread that caused the initial failure
+				go func() {
+					err := task.Execute(t.ctx)
+
+					if err != nil {
+						t.namedErrorChan <- &NamedError{TaskName: name, Stage: Execute, Err: err}
+					} else {
+						select {
+						case <-t.done:
+							// nothing to do here since we are properly shutting down and want to capture the race
+							t.namedErrorChan <- nil
+						case t.namedErrorChan <- &NamedError{TaskName: name, Stage: Execute, Err: fmt.Errorf("Unexpected shutdown for task process")}:
+							// unexpected shutdown for a task process. Initiate abort of all task processes
+						}
 					}
-				} else {
-					select {
-					case <-t.done:
-						// nothing to do here since we are properly shutting down
-					case t.namedErrorChan <- NamedError{TaskName: name, Stage: Execute, Err: fmt.Errorf("Unexpected shutdown for task process")}:
-						// unexpected shutdown for a task process. Initiate abort of all task processes
-					}
-				}
-			}()
+				}()
+			case <-t.done:
+				// must be shutting down There is a slim rce when trying to add tasks async and a cancel happen at the same time
+				return fmt.Errorf("Task Manager has already shutdown. Will not manage task")
+			}
 		default:
 			t.executeTasks = append(t.executeTasks, executeTask{name: name, task: task})
 		}
@@ -156,8 +163,8 @@ func (t *TaskManager) AddExecuteTask(name string, task ExecuteTask) error {
 //	 1. These tasks will also cause the Task Manager to shutdown if an error is encountered depending on configuration
 func (t *TaskManager) Run(ctx context.Context) []NamedError {
 	var errors []NamedError
-
 	t.taskLock.Lock()
+
 	select {
 	case <-t.done:
 		// don't re-run if already stopped. closed channels will cause a problem
@@ -180,6 +187,14 @@ func (t *TaskManager) Run(ctx context.Context) []NamedError {
 			t.closeRunning()
 			t.taskLock.Unlock()
 
+			if len(t.namedTasks) == 0 && len(t.executeTasks) == 0 && !t.cfg.AllowNoManagedProcesses {
+				cancel()
+				t.closeDone()
+				return []NamedError{
+					{Err: fmt.Errorf("no tasks were added to the task manager and the configuration has AllowNoManagedProcesses = false")},
+				}
+			}
+
 			// initialize all named tasks
 			for index, namedTask := range t.namedTasks {
 				if err := namedTask.task.Initialize(); err != nil {
@@ -199,20 +214,20 @@ func (t *TaskManager) Run(ctx context.Context) []NamedError {
 
 			// start all tasks
 			for _, namedWork := range t.namedTasks {
-				t.tasks.Add(1)
-				go func(namedTask namedTask) {
-					defer t.tasks.Done()
+				t.tasksCounter += 1
 
+				go func(namedTask namedTask) {
 					err := namedTask.task.Execute(taskCtx)
 					if err != nil {
-						t.namedErrorChan <- NamedError{TaskName: namedTask.name, Stage: Execute, Err: err}
+						t.namedErrorChan <- &NamedError{TaskName: namedTask.name, Stage: Execute, Err: err}
 					} else {
 						select {
 						case <-taskCtx.Done():
-							// nothing to do here since we are properly shutting down
+							// shutting down
+							t.namedErrorChan <- nil
 						default:
 							// unexpected shutdown for a task process. Initiate abort of all task processes
-							t.namedErrorChan <- NamedError{TaskName: namedTask.name, Stage: Execute, Err: fmt.Errorf("Unexpected shutdown for task process")}
+							t.namedErrorChan <- &NamedError{TaskName: namedTask.name, Stage: Execute, Err: fmt.Errorf("Unexpected shutdown for task process")}
 						}
 					}
 				}(namedWork)
@@ -220,49 +235,88 @@ func (t *TaskManager) Run(ctx context.Context) []NamedError {
 
 			// start all execute tasks
 			for _, executeWork := range t.executeTasks {
-				t.tasks.Add(1)
-				go func(executeTask executeTask) {
-					defer t.tasks.Done()
+				t.tasksCounter += 1
 
+				go func(executeTask executeTask) {
 					err := executeTask.task.Execute(taskCtx)
 					if err != nil {
-						t.namedErrorChan <- NamedError{TaskName: executeTask.name, Stage: Execute, Err: err}
+						t.namedErrorChan <- &NamedError{TaskName: executeTask.name, Stage: Execute, Err: err}
 					} else {
 						select {
 						case <-taskCtx.Done():
-							// nothing to do here since we are properly shutting down
+							// shutting down
+							t.namedErrorChan <- nil
 						default:
 							// unexpected shutdown for a task process. Initiate abort of all task processes
-							t.namedErrorChan <- NamedError{TaskName: executeTask.name, Stage: Execute, Err: fmt.Errorf("Unexpected shutdown for task process")}
+							t.namedErrorChan <- &NamedError{TaskName: executeTask.name, Stage: Execute, Err: fmt.Errorf("Unexpected shutdown for task process")}
 						}
 					}
 				}(executeWork)
 			}
 
+			// manage threading for tring to add a task and shutdown race conditions
 			go func() {
-				if t.cfg.AllowNoManagedProcesses {
-					// need to wait for the original context to close. Or a failure is  shutting down
-					// the server and we need to shutdown
-					<-taskCtx.Done()
-				}
+				for {
+					select {
+					case <-taskCtx.Done():
+						// the main context was canceld by either a shutdown from the caller or an error
+						for {
+							if t.tasksCounter == 0 {
+								t.closeDone()
+								return
+							}
 
-				// in both cases, we still want for all tasks to finish draining
-				t.tasks.Wait()
-				t.closeDone()
+							<-t.removeTaskChan
+							t.tasksCounter -= 1
+
+							if !t.cfg.AllowNoManagedProcesses {
+								// if there are no managed proccesses we are done
+								if t.tasksCounter == 0 {
+									t.closeDone()
+								}
+
+								// must still be processing shutdowns so nothing to do
+							} else {
+								select {
+								case <-taskCtx.Done():
+									// the task context is done, so we are canceling or there was an error
+									if t.tasksCounter == 0 {
+										t.closeDone()
+									}
+								default:
+									// must still be processing shutdowns so nothing to do
+								}
+							}
+						}
+					case <-t.addTaskChan: // signal a process is adding a task
+						t.tasksCounter += 1
+					case <-t.removeTaskChan:
+						t.tasksCounter -= 1
+					}
+				}
 			}()
 
 		RUNLOOP:
 			for {
 				select {
 				case namedError := <-t.namedErrorChan:
+					t.removeTaskChan <- struct{}{} // signal that we are removing a task
+
 					if t.cfg.AllowExecuteFailures {
 						// we are allowing execute failures, do don't cancel the task manager
 						if t.cfg.ReportErrors {
-							errors = append(errors, namedError)
+							if namedError != nil {
+								errors = append(errors, *namedError)
+							}
 						}
 					} else {
 						// any error should be recored and fail the task manger since we do not allow for any errors
-						errors = append(errors, namedError)
+						if t.cfg.ReportErrors {
+							if namedError != nil {
+								errors = append(errors, *namedError)
+							}
+						}
+
 						cancel()
 					}
 				case <-t.done:
