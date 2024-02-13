@@ -11,10 +11,10 @@ For the Task Manager to operate, each task must follow 1 of two patterns.
 Is expected to run for the entire process's execution.
 
 1. Each task added to the Task Manager will initialize serially in the order they were added to the Task Manager
-  1. If an error occurs, Initializng any remaning tasks are skipped and Cleanup is called for any tasks that have already been Initialized
+    1. If an error occurs, Initializng any remaning tasks are skipped and Cleanup is called for any tasks that have already been Initialized
 2. In parallel runs all Execute(...) functions for any tasks
-  1. All tasks are expected to run and not error.
-  2. If any tasks return an error, the Task Manager will cancel all running tasks and then run the Cleanup for each task.
+    1. All tasks are expected to run and not error.
+    2. If any tasks return an error, the Task Manager will cancel all running tasks and then run the Cleanup for each task.
 3. When the Task Manager's context is canceled, each task process will have their context canceled
 4. Each Task's Cleanup function is called in reverse order they were added to the Task Manager
 
