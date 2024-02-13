@@ -13,11 +13,11 @@ type forceStop struct {
 	subTask  goasync.Task
 }
 
-// ForceStop Tasks are used to ensure a forceful termination even if subTasks don't properly stop executing
+// PARAMETERS:
+//   - duration: time to wait for subtask to finish. If this time is reached an error is returned and subTask is ignored
+//   - task: task process that is wrapped to handle interruptions
 //
-// Args:
-//  - duration: time to wait for subtask to finish. If this time is reached an error is returned and subTask is ignored
-//  - task: task process that is wrapped to handle interruptions
+// ForceStop Tasks are used to ensure a forceful termination even if subTasks don't properly stop executing
 func ForceStop(duration time.Duration, task goasync.Task) *forceStop {
 	return &forceStop{
 		duration: duration,

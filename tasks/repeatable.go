@@ -10,6 +10,9 @@ type repeatable struct {
 	callback goasync.Task
 }
 
+//	PARAMETERS:
+//	- task - task process that is wrapped for the periodic timer
+//
 // Repeatable Tasks are used to run any tasks that might fail with an error.
 // This task will swallow ther `Run()` error for the passed in `task` argument
 // and restart the process. Initialize and Cleanup errors are propigated as normal

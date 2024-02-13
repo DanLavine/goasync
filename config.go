@@ -11,7 +11,7 @@ type Config struct {
 	//  If set to 'false', will not report any errors when context is canceled
 	ReportErrors bool
 
-	// When set tot 'true', this will allow the TaskManager to run even if no tasks are currently being managed. The use case
+	// When set to 'true', this will allow the TaskManager to run even if no tasks are currently being managed. The use case
 	// here is to allow for the the TaskManager.AddRunningTask(...) to periodically be called and
 	// those process might just end. For example a TCP server that has clients connecting and disconnecting
 	// can be used to add tasks here. But we would still want to cancel them when the original context
@@ -19,7 +19,7 @@ type Config struct {
 	AllowNoManagedProcesses bool
 }
 
-// Default configuration that will cause an error if any tasks stop executing
+// Default configuration that will cause an error if any tasks stop executing and report the errors
 func StrictConfig() Config {
 	return Config{
 		AllowExecuteFailures:    false,

@@ -14,13 +14,13 @@ type interruptible struct {
 	subTask goasync.Task
 }
 
+//	PARAMETERS:
+//	- signals: OS signals to capture and initiate the reload operation
+//	- task: task process that is wrapped to handle interruptions
+//
 // Interruptible Tasks are used to run any tasks that can be reloaded at runtime.
 // When this task recieves an interrupt signal it will cancel the child Task process
 // and call Cleanup. Then this will call Initialize and Execute again for the child Task.
-//
-// Args:
-//  - signals: OS signals to capture and initiate the reload operation
-//  - task: task process that is wrapped to handle interruptions
 func Interruptible(signals []os.Signal, task goasync.Task) *interruptible {
 	return &interruptible{
 		signals: signals,

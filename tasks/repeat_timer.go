@@ -12,10 +12,11 @@ type repeatTimer struct {
 	subTask    goasync.Task
 }
 
-// RepeatTimer Executeers are used to run periodic one off tasks on a timer.
-// Args:
-//  - repeatTime: amount of time to wait between invoking the subTask
-//  - task: task process that is wrapped for the periodic timer
+//	PARAMETERS:
+//	- repeatTime - amount of time to wait between invoking the subTask
+//	- task - task process that is wrapped for the periodic timer
+//
+// RepeatTimer Executers are used to run periodic one off tasks on a timer.
 func RepeatTimer(repeatTime time.Duration, task goasync.Task) *repeatTimer {
 	return &repeatTimer{
 		repeatTime: repeatTime,

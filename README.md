@@ -11,7 +11,7 @@ For the Task Manager to operate, each task must follow 1 of two patterns.
 Is expected to run for the entire process's execution.
 
 1. Each task added to the Task Manager will initialize serially in the order they were added to the Task Manager
-    1. If an error occurs, Initializng any remaning tasks are skipped and Cleanup is called for any tasks that have already been Initialized
+    1. If an error occurs during Initialization, any remaining tasks are skipped and Cleanup is called for any tasks that have already been Initialized
 2. In parallel runs all Execute(...) functions for any tasks
     1. All tasks are expected to run and not error.
     2. If any tasks return an error, the Task Manager will cancel all running tasks and then run the Cleanup for each task.
@@ -20,10 +20,9 @@ Is expected to run for the entire process's execution.
 
 Task interface:
 ```
-// A Task is anything that can be managed by the TaskManager and added before the taskmanager
-// start running. Any errors will cause the process to exit as all tasks are expected to run without erros
+// Task is anything that can be added to the TaskManager before it stats Executing.
 type Task interface {
-// Initializate functions are ran serially in the order they were added to the TaskManager.
+// Initialize functions are ran serially in the order they were added to the TaskManager.
 // These are useful when one Goroutine dependency requires a previous Worker to setup some common
 // dependency like a DB connection.
 Initialize() error
@@ -31,8 +30,8 @@ Initialize() error
 // Execute is the main Async function to house all the multi-threaded logic handled by GoAsync.
 Execute(ctx context.Context) error
 
-// Clenup functions are ran serially in reverse order they were added to the TaskManager.
-// This way the 1st Initialze dependency is stopped last
+// Cleanup functions are ran serially in reverse order they were added to the TaskManager.
+// This way the 1st Initalized dependency is stopped last
 Cleanup() error
 }
 ```
@@ -40,9 +39,9 @@ Cleanup() error
 ### Execute Task
 Can be added to a process that is already running
 
-Exeute Task interface:
+ExecuteTask interface:
 ```
-// A ExecuteTask can be added to a Task Manager before or after it has already started managin the tasks.
+// ExecuteTask can be added to the TaskManager before or after it has already started Executing the tasks.
 // These tasks are expected to already be properly Initialized and don't require any Cleanup Code.
 type ExecuteTask interface {
   // Execute is the main Async function to house all the multi-threaded logic handled by GoAsync.

@@ -32,13 +32,13 @@ type TaskManager struct {
 	executeTasks []executeTask
 }
 
-//	PARAMS:
-//	* config - configuration to use. Handles error reporting and use cases for terminating the managed tasks
+//	PARAMETERS:
+//	- config - configuration to use. Handles error reporting and use cases for terminating the managed tasks
 //
 //	RETURNS:
-//	* *TaskManager - configured task manager
+//	- *TaskManager - configured task manager
 //
-// Create a new task manager for async tasks
+// Create a new TaskManger to manage async tasks
 func NewTaskManager(config Config) *TaskManager {
 	return &TaskManager{
 		doneOnce: new(sync.Once),
@@ -59,12 +59,12 @@ func NewTaskManager(config Config) *TaskManager {
 	}
 }
 
-//	PARAMS:
-//	* name - name of the task. On any errors this will be reported with the name
-//	* task (required) - task to be managed, cannot be nil
+//	PARAMETERS:
+//	- name - name of the task. On any errors this will be reported to see which tasks failed
+//	- task - task to be managed, cannot be nil
 //
 //	RETURNS
-//	* error - any errors when adding the task to be managed
+//	- error - any errors when adding the task to be managed
 //
 // Add a task to the TaskManager. All tasks added this way must be called
 // before the Run(...) function so their Inintialize() function can be called in the proper order
@@ -91,17 +91,21 @@ func (t *TaskManager) AddTask(name string, task Task) error {
 	}
 }
 
-//	PARAMS:
-//	* name - name of the task. On any errors this will be reported with the name
-//	* task - task to be managed
+//	PARAMETERS:
+//	- name - name of the task. On any errors this will be reported to see which tasks failed
+//	- task - task to be managed, cannot be nil
 //
 //	RETURNS
-//	* error - any errors when adding the task to be managed
+//	- error - any errors when adding the task to be managed
 //
 // AddExecuteTask can be used to add a new task to the Taskmanger before or after it is already running
 func (t *TaskManager) AddExecuteTask(name string, task ExecuteTask) error {
 	t.taskLock.Lock()
 	defer t.taskLock.Unlock()
+
+	if task == nil {
+		return fmt.Errorf("task cannot be nil")
+	}
 
 	select {
 	case <-t.done:
@@ -142,11 +146,11 @@ func (t *TaskManager) AddExecuteTask(name string, task ExecuteTask) error {
 	return nil
 }
 
-//	PARAMS:
-//	* ctx - context to stop the TaskManager
+//	PARAMETERS:
+//	- ctx - context to stop the TaskManager
 //
 //	RETURNS:
-//	* []NamedError - slice of errors with the name of the failed task
+//	- []NamedError - slice of errors with the name of the failed task
 //
 // Run any tasks added to the TaskManager.
 //
@@ -154,8 +158,8 @@ func (t *TaskManager) AddExecuteTask(name string, task ExecuteTask) error {
 //	 1. Run each Initialize process serially in the order they were added to the TaskManager
 //	    a. If an error occurs, stop Initializng any remaning tasks. Also Run Cleanup for any tasks that have been Initialized.
 //	 2. In Parallel Run all Execute(...) functions for any tasks
-//	    a. All tasks are expected to run and not error.
-//	    b. If any tasks return an error, the TaskManager will cancel all running tasks and then run the Cleanup for each task if configured to do so.
+//	    a. All tasks are expected to run and only error if the configration allows for it.
+//	    b. If any tasks return an error, the TaskManager can cancel all running tasks and then run the Cleanup for each task if configured to do so.
 //	 3. Once the context ic canceled, each task process will have their context canceled
 //	 4. Each Task's Cleanup function is called in reverse order they were added to the TaskManager
 //
@@ -175,7 +179,7 @@ func (t *TaskManager) Run(ctx context.Context) []NamedError {
 	default:
 		select {
 		case <-t.running:
-			// don't re-run if already stopped. closed channels will cause a problem
+			// don't re-run if already running
 			t.taskLock.Unlock()
 			return []NamedError{
 				{Err: fmt.Errorf("task manager is already running. Will not run again")},
@@ -183,12 +187,13 @@ func (t *TaskManager) Run(ctx context.Context) []NamedError {
 		default:
 			// setup for AddExecuteTask to ensure that can run properly
 			taskCtx, cancel := context.WithCancel(ctx)
+			defer cancel()
+
 			t.ctx = taskCtx
 			t.closeRunning()
 			t.taskLock.Unlock()
 
 			if len(t.namedTasks) == 0 && len(t.executeTasks) == 0 && !t.cfg.AllowNoManagedProcesses {
-				cancel()
 				t.closeDone()
 				return []NamedError{
 					{Err: fmt.Errorf("no tasks were added to the task manager and the configuration has AllowNoManagedProcesses = false")},
@@ -207,7 +212,6 @@ func (t *TaskManager) Run(ctx context.Context) []NamedError {
 						}
 					}
 
-					cancel()
 					return errors
 				}
 			}
