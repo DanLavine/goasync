@@ -8,14 +8,16 @@ The `Task Manager` is responsible for running and managing any number of assigne
 For the Task Manager to operate, each task must follow 1 of two patterns.
 
 ### Long Running Task
-Is expected to run for the entire process's execution.
+These tasks are expected to run for the entire task manager lifecyle as they have special initialization
+and shutdown logic. 
 
 1. Each task added to the Task Manager will initialize serially in the order they were added to the Task Manager
     1. If an error occurs during Initialization, any remaining tasks are skipped and Cleanup is called for any tasks that have already been Initialized
 2. In parallel runs all Execute(...) functions for any tasks
-    1. All tasks are expected to run and not error.
-    2. If any tasks return an error, the Task Manager will cancel all running tasks and then run the Cleanup for each task.
-3. When the Task Manager's context is canceled, each task process will have their context canceled
+    1. If the task manager is configured to abort execution on any stoped task, then the Task Manager will
+       cancel all running tasks and then run the Cleanup for each task.
+3. When the Task Manager's context is canceled, each task process will have their context canceled. The task manager will then wait until
+   all running tasks have been stopped.
 4. Each Task's Cleanup function is called in reverse order they were added to the Task Manager
 
 Task interface:
