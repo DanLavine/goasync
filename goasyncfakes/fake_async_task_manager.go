@@ -21,6 +21,18 @@ type FakeAsyncTaskManager struct {
 	addExecuteTaskReturnsOnCall map[int]struct {
 		result1 error
 	}
+	AddStopTaskStub        func(string, goasync.Task) error
+	addStopTaskMutex       sync.RWMutex
+	addStopTaskArgsForCall []struct {
+		arg1 string
+		arg2 goasync.Task
+	}
+	addStopTaskReturns struct {
+		result1 error
+	}
+	addStopTaskReturnsOnCall map[int]struct {
+		result1 error
+	}
 	AddTaskStub        func(string, goasync.Task) error
 	addTaskMutex       sync.RWMutex
 	addTaskArgsForCall []struct {
@@ -106,6 +118,68 @@ func (fake *FakeAsyncTaskManager) AddExecuteTaskReturnsOnCall(i int, result1 err
 		})
 	}
 	fake.addExecuteTaskReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeAsyncTaskManager) AddStopTask(arg1 string, arg2 goasync.Task) error {
+	fake.addStopTaskMutex.Lock()
+	ret, specificReturn := fake.addStopTaskReturnsOnCall[len(fake.addStopTaskArgsForCall)]
+	fake.addStopTaskArgsForCall = append(fake.addStopTaskArgsForCall, struct {
+		arg1 string
+		arg2 goasync.Task
+	}{arg1, arg2})
+	stub := fake.AddStopTaskStub
+	fakeReturns := fake.addStopTaskReturns
+	fake.recordInvocation("AddStopTask", []interface{}{arg1, arg2})
+	fake.addStopTaskMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeAsyncTaskManager) AddStopTaskCallCount() int {
+	fake.addStopTaskMutex.RLock()
+	defer fake.addStopTaskMutex.RUnlock()
+	return len(fake.addStopTaskArgsForCall)
+}
+
+func (fake *FakeAsyncTaskManager) AddStopTaskCalls(stub func(string, goasync.Task) error) {
+	fake.addStopTaskMutex.Lock()
+	defer fake.addStopTaskMutex.Unlock()
+	fake.AddStopTaskStub = stub
+}
+
+func (fake *FakeAsyncTaskManager) AddStopTaskArgsForCall(i int) (string, goasync.Task) {
+	fake.addStopTaskMutex.RLock()
+	defer fake.addStopTaskMutex.RUnlock()
+	argsForCall := fake.addStopTaskArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeAsyncTaskManager) AddStopTaskReturns(result1 error) {
+	fake.addStopTaskMutex.Lock()
+	defer fake.addStopTaskMutex.Unlock()
+	fake.AddStopTaskStub = nil
+	fake.addStopTaskReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeAsyncTaskManager) AddStopTaskReturnsOnCall(i int, result1 error) {
+	fake.addStopTaskMutex.Lock()
+	defer fake.addStopTaskMutex.Unlock()
+	fake.AddStopTaskStub = nil
+	if fake.addStopTaskReturnsOnCall == nil {
+		fake.addStopTaskReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.addStopTaskReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -238,6 +312,8 @@ func (fake *FakeAsyncTaskManager) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.addExecuteTaskMutex.RLock()
 	defer fake.addExecuteTaskMutex.RUnlock()
+	fake.addStopTaskMutex.RLock()
+	defer fake.addStopTaskMutex.RUnlock()
 	fake.addTaskMutex.RLock()
 	defer fake.addTaskMutex.RUnlock()
 	fake.runMutex.RLock()

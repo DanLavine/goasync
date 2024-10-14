@@ -11,6 +11,10 @@ type AsyncTaskManager interface {
 	// Add a task before running the task manager
 	AddTask(name string, task Task) error
 
+	// Add a task that when stopped will trigger the async task manager to cancel all other tasks.
+	// Calling this multiple times will wait for all tasks to stop before canceling the async task manager
+	AddStopTask(name string, task Task) error
+
 	// add a task to an already running task manager
 	AddExecuteTask(name string, task ExecuteTask) error
 
@@ -44,12 +48,40 @@ type ExecuteTask interface {
 	Execute(ctx context.Context) error
 }
 
+// TASK_TYPE defines how tasks should be handeled when they stop processing
+type TASK_TYPE int
+
+const (
+	// STRICT will cause a shutdown to all other tasks if they return before the Task Manager's Context has been canceled
+	TASK_TYPE_STRICT TASK_TYPE = iota
+	// ERROR will cause a shutdown to all other tasks if any non nil error is returned before the Task Manager's Context has been canceled
+	TASK_TYPE_ERROR
+	// STOP_GROUP will cause a shutdown on the Task Manager once all STOP_GROUP process have finished iff they only return nil error(s).
+	// If any Task(s) returns an error that is not nil, then the Task Manager will be canceled and all errors will be reported
+	TASK_TYPE_STOP_GROUP
+)
+
+// EXECUTE_TASK_TYPE defines the possible task types that can applied to an already running Task Manager
+type EXECUTE_TASK_TYPE = TASK_TYPE
+
+const (
+	// STRICT will cause a shutdown to all other tasks if they return before the Task Manager's Context has been canceled
+	EXECUTE_TASK_TYPE_STRICT EXECUTE_TASK_TYPE = TASK_TYPE_STRICT
+
+	// ERROR will cause a shutdown to all other tasks if any non nil error is returned before the Task Manager's Context has been canceled
+	EXECUTE_TASK_TYPE_ERROR EXECUTE_TASK_TYPE = TASK_TYPE_ERROR
+)
+
 type namedTask struct {
 	name string
 	task Task
+
+	taskType TASK_TYPE
 }
 
 type executeTask struct {
 	name string
 	task ExecuteTask
+
+	taskType EXECUTE_TASK_TYPE
 }

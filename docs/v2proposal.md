@@ -9,3 +9,4 @@ a v2 which will cause breaking changes. These currently include:
           With this only being able to be called multiple times? Then when all process have stopped it is done. Also, can only
           be called before Run() is invoked. Need to think more about the possible use cases
     * Pass the context to both the Initalize() and Cleanup() functions
+    * Remove the config, have the behavior be placed on the tasks themselves
