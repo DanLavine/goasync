@@ -17,7 +17,7 @@ func TestRepeatable_Initialize_Calls_Callback_Initialize(t *testing.T) {
 	fakeTask1 := &goasyncfakes.FakeTask{}
 	repeatable := tasks.Repeatable(fakeTask1)
 
-	g.Expect(repeatable.Initialize()).ToNot(HaveOccurred())
+	g.Expect(repeatable.Initialize(context.Background())).ToNot(HaveOccurred())
 	g.Expect(fakeTask1.InitializeCallCount()).To(Equal(1))
 }
 
@@ -27,7 +27,7 @@ func TestRepeatable_Cleanup_Calls_Callback_Cleanup(t *testing.T) {
 	fakeTask1 := &goasyncfakes.FakeTask{}
 	repeatable := tasks.Repeatable(fakeTask1)
 
-	g.Expect(repeatable.Cleanup()).ToNot(HaveOccurred())
+	g.Expect(repeatable.Cleanup(context.Background())).ToNot(HaveOccurred())
 	g.Expect(fakeTask1.CleanupCallCount()).To(Equal(1))
 }
 

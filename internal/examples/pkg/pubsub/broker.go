@@ -31,8 +31,8 @@ func Broker() *broker {
 // Subscribes creates a message client for a particular channel.
 //
 // Args:
-//  - channel: name of the channel to subsribe to
-//  - buffer: buffer size for the client messages.
+//   - channel: name of the channel to subsribe to
+//   - buffer: buffer size for the client messages.
 func (b *broker) Subscribe(channel string, buffer int) <-chan interface{} {
 	b.subscriberLock.Lock()
 	defer b.subscriberLock.Unlock()
@@ -65,8 +65,8 @@ func (b *broker) Publish(channel string, msg interface{}) {
 }
 
 // Task Methods
-func (b *broker) Initialize() error { return nil }
-func (b *broker) Cleanup() error    { return nil }
+func (b *broker) Initialize(_ context.Context) error { return nil }
+func (b *broker) Cleanup(_ context.Context) error    { return nil }
 
 func (b *broker) Execute(ctx context.Context) error {
 	<-ctx.Done()

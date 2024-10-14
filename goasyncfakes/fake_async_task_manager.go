@@ -9,11 +9,12 @@ import (
 )
 
 type FakeAsyncTaskManager struct {
-	AddExecuteTaskStub        func(string, goasync.ExecuteTask) error
+	AddExecuteTaskStub        func(string, goasync.ExecuteTask, goasync.EXECUTE_TASK_TYPE) error
 	addExecuteTaskMutex       sync.RWMutex
 	addExecuteTaskArgsForCall []struct {
 		arg1 string
 		arg2 goasync.ExecuteTask
+		arg3 goasync.EXECUTE_TASK_TYPE
 	}
 	addExecuteTaskReturns struct {
 		result1 error
@@ -21,11 +22,12 @@ type FakeAsyncTaskManager struct {
 	addExecuteTaskReturnsOnCall map[int]struct {
 		result1 error
 	}
-	AddTaskStub        func(string, goasync.Task) error
+	AddTaskStub        func(string, goasync.Task, goasync.TASK_TYPE) error
 	addTaskMutex       sync.RWMutex
 	addTaskArgsForCall []struct {
 		arg1 string
 		arg2 goasync.Task
+		arg3 goasync.TASK_TYPE
 	}
 	addTaskReturns struct {
 		result1 error
@@ -48,19 +50,20 @@ type FakeAsyncTaskManager struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeAsyncTaskManager) AddExecuteTask(arg1 string, arg2 goasync.ExecuteTask) error {
+func (fake *FakeAsyncTaskManager) AddExecuteTask(arg1 string, arg2 goasync.ExecuteTask, arg3 goasync.EXECUTE_TASK_TYPE) error {
 	fake.addExecuteTaskMutex.Lock()
 	ret, specificReturn := fake.addExecuteTaskReturnsOnCall[len(fake.addExecuteTaskArgsForCall)]
 	fake.addExecuteTaskArgsForCall = append(fake.addExecuteTaskArgsForCall, struct {
 		arg1 string
 		arg2 goasync.ExecuteTask
-	}{arg1, arg2})
+		arg3 goasync.EXECUTE_TASK_TYPE
+	}{arg1, arg2, arg3})
 	stub := fake.AddExecuteTaskStub
 	fakeReturns := fake.addExecuteTaskReturns
-	fake.recordInvocation("AddExecuteTask", []interface{}{arg1, arg2})
+	fake.recordInvocation("AddExecuteTask", []interface{}{arg1, arg2, arg3})
 	fake.addExecuteTaskMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2)
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
@@ -74,17 +77,17 @@ func (fake *FakeAsyncTaskManager) AddExecuteTaskCallCount() int {
 	return len(fake.addExecuteTaskArgsForCall)
 }
 
-func (fake *FakeAsyncTaskManager) AddExecuteTaskCalls(stub func(string, goasync.ExecuteTask) error) {
+func (fake *FakeAsyncTaskManager) AddExecuteTaskCalls(stub func(string, goasync.ExecuteTask, goasync.EXECUTE_TASK_TYPE) error) {
 	fake.addExecuteTaskMutex.Lock()
 	defer fake.addExecuteTaskMutex.Unlock()
 	fake.AddExecuteTaskStub = stub
 }
 
-func (fake *FakeAsyncTaskManager) AddExecuteTaskArgsForCall(i int) (string, goasync.ExecuteTask) {
+func (fake *FakeAsyncTaskManager) AddExecuteTaskArgsForCall(i int) (string, goasync.ExecuteTask, goasync.EXECUTE_TASK_TYPE) {
 	fake.addExecuteTaskMutex.RLock()
 	defer fake.addExecuteTaskMutex.RUnlock()
 	argsForCall := fake.addExecuteTaskArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeAsyncTaskManager) AddExecuteTaskReturns(result1 error) {
@@ -110,19 +113,20 @@ func (fake *FakeAsyncTaskManager) AddExecuteTaskReturnsOnCall(i int, result1 err
 	}{result1}
 }
 
-func (fake *FakeAsyncTaskManager) AddTask(arg1 string, arg2 goasync.Task) error {
+func (fake *FakeAsyncTaskManager) AddTask(arg1 string, arg2 goasync.Task, arg3 goasync.TASK_TYPE) error {
 	fake.addTaskMutex.Lock()
 	ret, specificReturn := fake.addTaskReturnsOnCall[len(fake.addTaskArgsForCall)]
 	fake.addTaskArgsForCall = append(fake.addTaskArgsForCall, struct {
 		arg1 string
 		arg2 goasync.Task
-	}{arg1, arg2})
+		arg3 goasync.TASK_TYPE
+	}{arg1, arg2, arg3})
 	stub := fake.AddTaskStub
 	fakeReturns := fake.addTaskReturns
-	fake.recordInvocation("AddTask", []interface{}{arg1, arg2})
+	fake.recordInvocation("AddTask", []interface{}{arg1, arg2, arg3})
 	fake.addTaskMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2)
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
@@ -136,17 +140,17 @@ func (fake *FakeAsyncTaskManager) AddTaskCallCount() int {
 	return len(fake.addTaskArgsForCall)
 }
 
-func (fake *FakeAsyncTaskManager) AddTaskCalls(stub func(string, goasync.Task) error) {
+func (fake *FakeAsyncTaskManager) AddTaskCalls(stub func(string, goasync.Task, goasync.TASK_TYPE) error) {
 	fake.addTaskMutex.Lock()
 	defer fake.addTaskMutex.Unlock()
 	fake.AddTaskStub = stub
 }
 
-func (fake *FakeAsyncTaskManager) AddTaskArgsForCall(i int) (string, goasync.Task) {
+func (fake *FakeAsyncTaskManager) AddTaskArgsForCall(i int) (string, goasync.Task, goasync.TASK_TYPE) {
 	fake.addTaskMutex.RLock()
 	defer fake.addTaskMutex.RUnlock()
 	argsForCall := fake.addTaskArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeAsyncTaskManager) AddTaskReturns(result1 error) {
