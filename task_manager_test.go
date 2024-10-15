@@ -25,7 +25,7 @@ func TestManager_AddTask(t *testing.T) {
 	t.Run("It returns an error if the taskmanger is already running", func(t *testing.T) {
 		fakeTask1 := &goasyncfakes.FakeTask{}
 		fakeTask1Start := make(chan struct{})
-		fakeTask1.InitializeStub = func() error {
+		fakeTask1.InitializeStub = func(_ context.Context) error {
 			fakeTask1Start <- struct{}{}
 
 			<-fakeTask1Start
@@ -153,7 +153,7 @@ func TestManager_Run(t *testing.T) {
 		t.Run("It runs tasks in the order they were added", func(t *testing.T) {
 			fakeTask1 := &goasyncfakes.FakeTask{}
 			fakeTask1Start := make(chan struct{})
-			fakeTask1.InitializeStub = func() error {
+			fakeTask1.InitializeStub = func(_ context.Context) error {
 				<-fakeTask1Start
 				return nil
 			}
@@ -184,12 +184,12 @@ func TestManager_Run(t *testing.T) {
 
 			fakeTask1 := &goasyncfakes.FakeTask{}
 			fakeTask2 := &goasyncfakes.FakeTask{}
-			fakeTask2.CleanupStub = func() error {
+			fakeTask2.CleanupStub = func(_ context.Context) error {
 				<-fakeTask2Done
 				return nil
 			}
 			fakeTask3 := &goasyncfakes.FakeTask{}
-			fakeTask3.CleanupStub = func() error {
+			fakeTask3.CleanupStub = func(_ context.Context) error {
 				<-fakeTask3Done
 				return fmt.Errorf("failed to cleanup")
 			}
@@ -228,7 +228,7 @@ func TestManager_Run(t *testing.T) {
 
 			fakeTask2 := &goasyncfakes.FakeTask{}
 			fakeTask2Cleanup := make(chan struct{})
-			fakeTask2.CleanupStub = func() error {
+			fakeTask2.CleanupStub = func(_ context.Context) error {
 				<-fakeTask2Cleanup
 				return nil
 			}

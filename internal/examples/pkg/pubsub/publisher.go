@@ -2,7 +2,6 @@ package pubsub
 
 import (
 	"fmt"
-	"math/rand"
 	"time"
 
 	"golang.org/x/net/context"
@@ -20,12 +19,11 @@ func Publisher(channel string, broker *broker) *publisher {
 	}
 }
 
-func (p *publisher) Initialize() error {
-	rand.Seed(time.Now().UnixNano())
+func (p *publisher) Initialize(_ context.Context) error {
 	return nil
 }
 
-func (p *publisher) Cleanup() error {
+func (p *publisher) Cleanup(_ context.Context) error {
 	return nil
 }
 

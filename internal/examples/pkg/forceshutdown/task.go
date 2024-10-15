@@ -12,8 +12,8 @@ func ForeverTask() foreverTask {
 	return foreverTask{}
 }
 
-func (f foreverTask) Initialize() error { return nil }
-func (f foreverTask) Cleanup() error    { return nil }
+func (f foreverTask) Initialize(_ context.Context) error { return nil }
+func (f foreverTask) Cleanup(_ context.Context) error    { return nil }
 
 func (f foreverTask) Execute(ctx context.Context) error {
 	for {

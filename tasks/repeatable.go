@@ -23,8 +23,8 @@ func Repeatable(task goasync.Task) *repeatable {
 }
 
 // passthrough init and cleanup
-func (r *repeatable) Initialize() error { return r.callback.Initialize() }
-func (r *repeatable) Cleanup() error    { return r.callback.Cleanup() }
+func (r *repeatable) Initialize(ctx context.Context) error { return r.callback.Initialize(ctx) }
+func (r *repeatable) Cleanup(ctx context.Context) error    { return r.callback.Cleanup(ctx) }
 
 func (r *repeatable) Execute(ctx context.Context) error {
 	for {

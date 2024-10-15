@@ -19,7 +19,7 @@ func TestForceStop_Initialize_Calls_Callback_Initialize(t *testing.T) {
 	fakeTask1 := &goasyncfakes.FakeTask{}
 	forceStop := tasks.ForceStop(time.Second, fakeTask1)
 
-	g.Expect(forceStop.Initialize()).ToNot(HaveOccurred())
+	g.Expect(forceStop.Initialize(context.Background())).ToNot(HaveOccurred())
 	g.Expect(fakeTask1.InitializeCallCount()).To(Equal(1))
 }
 
@@ -30,7 +30,7 @@ func TestForceStop_Cleanup_Calls_Callback_Cleanup(t *testing.T) {
 	fakeTask1 := &goasyncfakes.FakeTask{}
 	forceStop := tasks.ForceStop(time.Second, fakeTask1)
 
-	g.Expect(forceStop.Cleanup()).ToNot(HaveOccurred())
+	g.Expect(forceStop.Cleanup(context.Background())).ToNot(HaveOccurred())
 	g.Expect(fakeTask1.CleanupCallCount()).To(Equal(1))
 }
 

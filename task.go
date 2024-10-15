@@ -29,14 +29,14 @@ type Task interface {
 	// Initialize functions are ran serially in the order they were added to the AsyncTaskManager.
 	// These are useful when one go routine dependency requires a previous Worker to setup some common
 	// dendency like a DB connection.
-	Initialize() error
+	Initialize(ctx context.Context) error
 
 	// Execute is the main Async function to contain all the multi-threaded logic handled by GoAsync.
 	Execute(ctx context.Context) error
 
 	// Cleanup functions are ran serially in reverse order they were added to the TaskManager.
 	// This way the 1st Initalized dependency is stopped last
-	Cleanup() error
+	Cleanup(ctx context.Context) error
 }
 
 // ExecuteTask can be added to the TaskManager before or after it has already started Executing the tasks.

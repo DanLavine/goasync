@@ -180,12 +180,12 @@ func (t *TaskManager) Run(ctx context.Context) []NamedError {
 
 			// initialize all named tasks
 			for index, namedTask := range t.namedTasks {
-				if err := namedTask.task.Initialize(); err != nil {
+				if err := namedTask.task.Initialize(taskCtx); err != nil {
 					taskErrors = append(taskErrors, NamedError{TaskName: namedTask.name, Stage: Initialize, Err: err})
 
 					// we hit an error. Run Cleanup in reverse order
 					for i := index; i >= 0; i-- {
-						if err = t.namedTasks[i].task.Cleanup(); err != nil {
+						if err = t.namedTasks[i].task.Cleanup(taskCtx); err != nil {
 							taskErrors = append(taskErrors, NamedError{TaskName: t.namedTasks[i].name, Stage: Cleanup, Err: err})
 						}
 					}
@@ -287,7 +287,7 @@ func (t *TaskManager) Run(ctx context.Context) []NamedError {
 
 			// cleanup
 			for i := len(t.namedTasks) - 1; i >= 0; i-- {
-				if err := t.namedTasks[i].task.Cleanup(); err != nil {
+				if err := t.namedTasks[i].task.Cleanup(taskCtx); err != nil {
 					taskErrors = append(taskErrors, NamedError{TaskName: t.namedTasks[i].name, Stage: Cleanup, Err: err})
 				}
 			}

@@ -29,8 +29,8 @@ func Interruptible(signals []os.Signal, task goasync.Task) *interruptible {
 }
 
 // passthrough init and cleanup
-func (i *interruptible) Initialize() error { return i.subTask.Initialize() }
-func (i *interruptible) Cleanup() error    { return i.subTask.Cleanup() }
+func (i *interruptible) Initialize(ctx context.Context) error { return i.subTask.Initialize(ctx) }
+func (i *interruptible) Cleanup(ctx context.Context) error    { return i.subTask.Cleanup(ctx) }
 
 func (i *interruptible) Execute(ctx context.Context) error {
 	for {
@@ -49,10 +49,10 @@ func (i *interruptible) Execute(ctx context.Context) error {
 			case <-taskCtx.Done():
 				// This is the case where the Interupt signal triggered the context to close and not the parent.
 				// So we need to restart our task
-				if err := i.subTask.Cleanup(); err != nil {
+				if err := i.subTask.Cleanup(ctx); err != nil {
 					return err
 				}
-				if err := i.subTask.Initialize(); err != nil {
+				if err := i.subTask.Initialize(ctx); err != nil {
 					return err
 				}
 			default:

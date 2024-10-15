@@ -21,7 +21,7 @@ func TestInterruptible_Initialize_Calls_Callback_Initialize(t *testing.T) {
 	fakeTask1 := &goasyncfakes.FakeTask{}
 	interruptible := tasks.Interruptible([]os.Signal{syscall.SIGINT}, fakeTask1)
 
-	g.Expect(interruptible.Initialize()).ToNot(HaveOccurred())
+	g.Expect(interruptible.Initialize(context.Background())).ToNot(HaveOccurred())
 	g.Expect(fakeTask1.InitializeCallCount()).To(Equal(1))
 }
 
@@ -31,7 +31,7 @@ func TestInterruptible_Cleanup_Calls_Callback_Cleanup(t *testing.T) {
 	fakeTask1 := &goasyncfakes.FakeTask{}
 	interruptible := tasks.Interruptible([]os.Signal{syscall.SIGINT}, fakeTask1)
 
-	g.Expect(interruptible.Cleanup()).ToNot(HaveOccurred())
+	g.Expect(interruptible.Cleanup(context.Background())).ToNot(HaveOccurred())
 	g.Expect(fakeTask1.CleanupCallCount()).To(Equal(1))
 }
 

@@ -25,8 +25,8 @@ func ForceStop(duration time.Duration, task goasync.Task) *forceStop {
 	}
 }
 
-func (fs *forceStop) Initialize() error { return fs.subTask.Initialize() }
-func (fs *forceStop) Cleanup() error    { return fs.subTask.Cleanup() }
+func (fs *forceStop) Initialize(ctx context.Context) error { return fs.subTask.Initialize(ctx) }
+func (fs *forceStop) Cleanup(ctx context.Context) error    { return fs.subTask.Cleanup(ctx) }
 
 func (fs *forceStop) Execute(ctx context.Context) error {
 	// make this buffered so chan can still be garbage collected if the subTask eventually exits

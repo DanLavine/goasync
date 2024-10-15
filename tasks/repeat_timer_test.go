@@ -18,7 +18,7 @@ func TestRepeatTimer_Initialize_Calls_Callback_Initialize(t *testing.T) {
 	fakeTask1 := &goasyncfakes.FakeTask{}
 	repeatTimer := tasks.RepeatTimer(time.Second, fakeTask1)
 
-	g.Expect(repeatTimer.Initialize()).ToNot(HaveOccurred())
+	g.Expect(repeatTimer.Initialize(context.Background())).ToNot(HaveOccurred())
 	g.Expect(fakeTask1.InitializeCallCount()).To(Equal(1))
 }
 
@@ -28,7 +28,7 @@ func TestRepeatTimer_Cleanup_Calls_Callback_Cleanup(t *testing.T) {
 	fakeTask1 := &goasyncfakes.FakeTask{}
 	repeatTimer := tasks.RepeatTimer(time.Second, fakeTask1)
 
-	g.Expect(repeatTimer.Cleanup()).ToNot(HaveOccurred())
+	g.Expect(repeatTimer.Cleanup(context.Background())).ToNot(HaveOccurred())
 	g.Expect(fakeTask1.CleanupCallCount()).To(Equal(1))
 }
 

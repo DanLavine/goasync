@@ -22,13 +22,13 @@ func Subscriber(name string, channel string, broker *broker) *subscriber {
 	}
 }
 
-func (s *subscriber) Initialize() error {
+func (s *subscriber) Initialize(_ context.Context) error {
 	// subscribe to the message broker
 	s.messageQueue = s.broker.Subscribe(s.channel, 5)
 	return nil
 }
 
-func (s *subscriber) Cleanup() error {
+func (s *subscriber) Cleanup(_ context.Context) error {
 	return nil
 }
 

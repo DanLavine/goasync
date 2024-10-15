@@ -9,9 +9,10 @@ import (
 )
 
 type FakeTask struct {
-	CleanupStub        func() error
+	CleanupStub        func(context.Context) error
 	cleanupMutex       sync.RWMutex
 	cleanupArgsForCall []struct {
+		arg1 context.Context
 	}
 	cleanupReturns struct {
 		result1 error
@@ -30,9 +31,10 @@ type FakeTask struct {
 	executeReturnsOnCall map[int]struct {
 		result1 error
 	}
-	InitializeStub        func() error
+	InitializeStub        func(context.Context) error
 	initializeMutex       sync.RWMutex
 	initializeArgsForCall []struct {
+		arg1 context.Context
 	}
 	initializeReturns struct {
 		result1 error
@@ -44,17 +46,18 @@ type FakeTask struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeTask) Cleanup() error {
+func (fake *FakeTask) Cleanup(arg1 context.Context) error {
 	fake.cleanupMutex.Lock()
 	ret, specificReturn := fake.cleanupReturnsOnCall[len(fake.cleanupArgsForCall)]
 	fake.cleanupArgsForCall = append(fake.cleanupArgsForCall, struct {
-	}{})
+		arg1 context.Context
+	}{arg1})
 	stub := fake.CleanupStub
 	fakeReturns := fake.cleanupReturns
-	fake.recordInvocation("Cleanup", []interface{}{})
+	fake.recordInvocation("Cleanup", []interface{}{arg1})
 	fake.cleanupMutex.Unlock()
 	if stub != nil {
-		return stub()
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
@@ -68,10 +71,17 @@ func (fake *FakeTask) CleanupCallCount() int {
 	return len(fake.cleanupArgsForCall)
 }
 
-func (fake *FakeTask) CleanupCalls(stub func() error) {
+func (fake *FakeTask) CleanupCalls(stub func(context.Context) error) {
 	fake.cleanupMutex.Lock()
 	defer fake.cleanupMutex.Unlock()
 	fake.CleanupStub = stub
+}
+
+func (fake *FakeTask) CleanupArgsForCall(i int) context.Context {
+	fake.cleanupMutex.RLock()
+	defer fake.cleanupMutex.RUnlock()
+	argsForCall := fake.cleanupArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeTask) CleanupReturns(result1 error) {
@@ -158,17 +168,18 @@ func (fake *FakeTask) ExecuteReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeTask) Initialize() error {
+func (fake *FakeTask) Initialize(arg1 context.Context) error {
 	fake.initializeMutex.Lock()
 	ret, specificReturn := fake.initializeReturnsOnCall[len(fake.initializeArgsForCall)]
 	fake.initializeArgsForCall = append(fake.initializeArgsForCall, struct {
-	}{})
+		arg1 context.Context
+	}{arg1})
 	stub := fake.InitializeStub
 	fakeReturns := fake.initializeReturns
-	fake.recordInvocation("Initialize", []interface{}{})
+	fake.recordInvocation("Initialize", []interface{}{arg1})
 	fake.initializeMutex.Unlock()
 	if stub != nil {
-		return stub()
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
@@ -182,10 +193,17 @@ func (fake *FakeTask) InitializeCallCount() int {
 	return len(fake.initializeArgsForCall)
 }
 
-func (fake *FakeTask) InitializeCalls(stub func() error) {
+func (fake *FakeTask) InitializeCalls(stub func(context.Context) error) {
 	fake.initializeMutex.Lock()
 	defer fake.initializeMutex.Unlock()
 	fake.InitializeStub = stub
+}
+
+func (fake *FakeTask) InitializeArgsForCall(i int) context.Context {
+	fake.initializeMutex.RLock()
+	defer fake.initializeMutex.RUnlock()
+	argsForCall := fake.initializeArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeTask) InitializeReturns(result1 error) {
