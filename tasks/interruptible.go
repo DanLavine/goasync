@@ -6,7 +6,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/DanLavine/goasync"
+	"github.com/DanLavine/goasync/v2"
 )
 
 type interruptible struct {

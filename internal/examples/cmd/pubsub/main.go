@@ -6,8 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/DanLavine/goasync"
-	"github.com/DanLavine/goasync/internal/examples/pkg/pubsub"
+	"github.com/DanLavine/goasync/v2"
+	"github.com/DanLavine/goasync/v2/internal/examples/pkg/pubsub"
 )
 
 // This is an example of a Pub Sub system where on shutdown, all messages are

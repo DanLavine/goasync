@@ -5,7 +5,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/DanLavine/goasync"
+	goasync "github.com/DanLavine/goasync/v2"
 )
 
 type FakeTask struct {

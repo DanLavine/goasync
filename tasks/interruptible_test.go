@@ -9,8 +9,8 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/DanLavine/goasync/goasyncfakes"
-	"github.com/DanLavine/goasync/tasks"
+	"github.com/DanLavine/goasync/v2/goasyncfakes"
+	"github.com/DanLavine/goasync/v2/tasks"
 )
 
 // NOTE these tests all use SIGINT since that should work on Windows as well

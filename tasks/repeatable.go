@@ -3,7 +3,7 @@ package tasks
 import (
 	"context"
 
-	"github.com/DanLavine/goasync"
+	"github.com/DanLavine/goasync/v2"
 )
 
 type repeatable struct {

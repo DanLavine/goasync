@@ -1,4 +1,4 @@
-module github.com/DanLavine/goasync
+module github.com/DanLavine/goasync/v2
 
 go 1.23
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/DanLavine/goasync"
+	"github.com/DanLavine/goasync/v2"
 )
 
 type forceStop struct {

@@ -7,9 +7,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/DanLavine/goasync"
-	"github.com/DanLavine/goasync/internal/examples/pkg/forceshutdown"
-	"github.com/DanLavine/goasync/tasks"
+	"github.com/DanLavine/goasync/v2"
+	"github.com/DanLavine/goasync/v2/internal/examples/pkg/forceshutdown"
+	"github.com/DanLavine/goasync/v2/tasks"
 )
 
 // This is an example of a bad acting sub process that won't shut down by default.

@@ -7,8 +7,8 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/DanLavine/goasync/goasyncfakes"
-	"github.com/DanLavine/goasync/tasks"
+	"github.com/DanLavine/goasync/v2/goasyncfakes"
+	"github.com/DanLavine/goasync/v2/tasks"
 )
 
 func TestRepeatable_Initialize_Calls_Callback_Initialize(t *testing.T) {

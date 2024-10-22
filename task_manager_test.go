@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/DanLavine/goasync"
-	"github.com/DanLavine/goasync/goasyncfakes"
-	"github.com/DanLavine/goasync/tasks"
+	"github.com/DanLavine/goasync/v2"
+	"github.com/DanLavine/goasync/v2/goasyncfakes"
+	"github.com/DanLavine/goasync/v2/tasks"
 	. "github.com/onsi/gomega"
 )
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/DanLavine/goasync"
+	"github.com/DanLavine/goasync/v2"
 )
 
 type repeatTimer struct {
