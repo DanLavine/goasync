@@ -56,7 +56,7 @@ For a number of common basic tasks provided, see [tasks](./tasks) directory
 
 # Installation
 ```
-go get -u github.com/DanLavine/goasync
+go get -u github.com/DanLavine/goasync/v2
 ```
 
 # Examples
