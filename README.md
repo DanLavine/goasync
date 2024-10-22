@@ -1,5 +1,5 @@
 # GoAsync - Flexible processes management library
-[godoc](https://pkg.go.dev/github.com/DanLavine/goasync)
+[godoc](https://pkg.go.dev/github.com/DanLavine/goasync/v2)
 
 Go Async is designed to simplify managing multi-process applications into easily understandable
 single purpose units of work.
