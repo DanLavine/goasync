@@ -31,11 +31,8 @@ type TaskManager struct {
 	executeTasks []executeTask
 }
 
-//	PARAMETERS:
-//	- config - configuration to use. Handles error reporting and use cases for terminating the managed tasks
-//
 //	RETURNS:
-//	- *TaskManager - configured task manager
+//	- *TaskManager - task manager with all private fields setup
 //
 // Create a new TaskManger to manage async tasks
 func NewTaskManager() *TaskManager {
@@ -62,6 +59,7 @@ func NewTaskManager() *TaskManager {
 //	PARAMETERS:
 //	- name - name of the task. On any errors this will be reported to see which tasks failed
 //	- task - task to be managed, cannot be nil
+//	- taskType - type of the task to run and manage. This indicate the error handling and shutdown logic for the specific task
 //
 //	RETURNS
 //	- error - any errors when adding the task to be managed
@@ -94,6 +92,7 @@ func (t *TaskManager) AddTask(name string, task Task, taskType TASK_TYPE) error 
 //	PARAMETERS:
 //	- name - name of the task. On any errors this will be reported to see which tasks failed
 //	- task - task to be managed, cannot be nil
+//	- taskType - type of the task to run and manage. This indicate the error handling and shutdown logic for the specific task
 //
 //	RETURNS
 //	- error - any errors when adding the task to be managed
@@ -142,9 +141,9 @@ func (t *TaskManager) AddExecuteTask(name string, task ExecuteTask, taskType EXE
 //	Rules for Tasks (added before Run):
 //	 1. Run each Initialize process serially in the order they were added to the TaskManager
 //	    a. If an error occurs, stop Initializng any remaning tasks. Also Run Cleanup for any tasks that have been Initialized.
-//	 2. In Parallel Run all Execute(...) functions for any tasks
-//	    a. All tasks are expected to run and only error if the configration allows for it.
-//	    b. If any tasks return an error, the TaskManager can cancel all running tasks and then run the Cleanup for each task if configured to do so.
+//	 2. In Parallel, run all Execute(...) functions for any tasks
+//	    a. All tasks are expected to run and only allow nil returns if the configration allows for it.
+//	    b. If any tasks return an error, the TaskManager can cancel all running tasks and then run the Cleanup for each task
 //	 3. Once the context ic canceled, each task process will have their context canceled
 //	 4. Each Task's Cleanup function is called in reverse order they were added to the TaskManager
 //
