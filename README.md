@@ -38,6 +38,32 @@ type Task interface {
 }
 ```
 
+Adding Tasks:
+```
+// PARAMETERS:
+// - name - name of the task. On any errors this will be reported to see which tasks failed
+// - task - task to be managed, cannot be nil
+// - taskType - type of the task to run and manage. This indicate the error handling and shutdown logic for the specific task
+//
+// RETURNS
+// - error - any errors when adding the task to be managed
+//
+// Add a task to the TaskManager. All tasks added this way must be called
+// before the Run(...) function so their Inintialize() function can be called in the proper order
+AddTask(name string, task Task, taskType TASK_TYPE) error
+```
+
+When adding tasks, you can provide a number of `TASK_TYPE` values which dicate the logic for async management:
+```
+* TASK_TYPE_STRICT     - These tasks should only be stoped when the `Execute(ctx context.Context)` has a canceled ctx. If these error or return nil
+                         early then all other tasks are stopped and the error is propigated through the Task Manager.
+* TASK_TYPE_ERROR      - Will cause a shutdown to all other tasks if any non nil error is returned as part of the `Executes(ctx context.Context)` call.
+* TASK_TYPE_STOP_GROUP - Stop Group tasks all need to be added before the Task Manager start to `Run(context.Context)` tasks and have special logic for
+                         stopping all other tasks. These tasks are allowed to return nil errors and once all `TASK_TYPE_STOP_GROUP` have returned nil,
+                         any other managed tasks are automatically canceled. If however, any of these async tasks return an actual error, all other task
+                         will be stopped immediately and the error will be propigated.
+```
+
 ### Execute Task
 Can be added to a process that is already running
 
@@ -49,6 +75,27 @@ type ExecuteTask interface {
   // Execute is the main Async function to house all the multi-threaded logic handled by GoAsync.
   Execute(ctx context.Context) error
 }
+```
+
+Adding Tasks:
+```
+// PARAMETERS:
+// - name - name of the task. On any errors this will be reported to see which tasks failed
+// - task - task to be managed, cannot be nil
+// - taskType - type of the task to run and manage. This indicate the error handling and shutdown logic for the specific task
+//
+// RETURNS
+// - error - any errors when adding the task to be managed
+//
+// AddExecuteTask can be used to add a new task to the Taskmanger before or after it is already running
+AddExecuteTask(name string, task ExecuteTask, taskType EXECUTE_TASK_TYPE) error
+```
+
+When adding tasks, you can provide a number of `TASK_TYPE` values which dicate the logic for async management:
+```
+* EXECUTE_TASK_TYPE_STRICT - These tasks should only be stoped when the `Execute(ctx context.Context)` has a canceled ctx. If these error or return nil
+                             early then all other tasks are stopped and the error is propigated through the Task Manager.
+* EXECUTE_TASK_TYPE_ERROR  - Will cause a shutdown to all other tasks if any non nil error is returned as part of the `Executes(ctx context.Context)` call.
 ```
 
 # Provided tasks
