@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/DanLavine/goasync/v2"
 	"github.com/DanLavine/goasync/v2/goasyncfakes"
@@ -354,17 +355,28 @@ func TestManager_Run(t *testing.T) {
 				fakeTask2 := &goasyncfakes.FakeTask{}
 				fakeTask3 := &goasyncfakes.FakeTask{}
 
+				fakeTask3.ExecuteStub = func(ctx context.Context) error {
+					select {
+					case <-ctx.Done():
+						panic("context was canceled on stop group")
+					case <-time.After(time.Second):
+					}
+
+					return nil
+				}
+
 				director := goasync.NewTaskManager()
 				director.AddTask("task1", fakeTask1, goasync.TASK_TYPE_STOP_GROUP)
 				director.AddTask("task2", fakeTask2, goasync.TASK_TYPE_STOP_GROUP)
-				director.AddTask("task3", tasks.Repeatable(fakeTask3), goasync.TASK_TYPE_STRICT)
+				director.AddTask("task3", fakeTask3, goasync.TASK_TYPE_STOP_GROUP)
+				director.AddTask("task4", tasks.Repeatable(fakeTask1), goasync.TASK_TYPE_STRICT)
 
 				errs := make(chan []goasync.NamedError)
 				go func() {
 					errs <- director.Run(context.Background())
 				}()
 
-				g.Eventually(errs).Should(Receive(BeNil()))
+				g.Eventually(errs, 2*time.Second).Should(Receive(BeNil()))
 			})
 		})
 	})

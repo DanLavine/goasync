@@ -197,7 +197,15 @@ func (t *TaskManager) Run(ctx context.Context) []NamedError {
 			for _, namedWork := range t.namedTasks {
 				t.tasksCounter += 1
 
+				// increase the counter for each running stop group task
+				switch namedWork.taskType {
+				case TASK_TYPE_STOP_GROUP:
+					t.stopTaskCounter++
+				default:
+				}
+
 				go func(namedTask namedTask) {
+
 					t.namedErrorChan <- &NamedError{TaskName: namedTask.name, Stage: Execute, Err: namedTask.task.Execute(taskCtx), TaskType: namedTask.taskType}
 				}(namedWork)
 			}
