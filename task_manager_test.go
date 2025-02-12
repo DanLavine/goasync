@@ -18,9 +18,17 @@ func TestManager_AddTask(t *testing.T) {
 	t.Run("It returns an error if the task in nil", func(t *testing.T) {
 		director := goasync.NewTaskManager()
 
-		err := director.AddTask("task1", nil, goasync.EXECUTE_TASK_TYPE_STRICT)
+		err := director.AddTask("task1", nil, goasync.TASK_TYPE_STRICT)
 		g.Expect(err).To(HaveOccurred())
 		g.Expect(err.Error()).To(Equal("task cannot be nil"))
+	})
+
+	t.Run("It returns an error if the task type is invalid", func(t *testing.T) {
+		director := goasync.NewTaskManager()
+
+		err := director.AddTask("", &goasyncfakes.FakeTask{}, goasync.TASK_TYPE(32))
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(Equal("taskType must be one of [TASK_TYPE_ERROR | TASK_TYPE_STRICT | TASK_TYPE_STOP_GROUP]"))
 	})
 
 	t.Run("It returns an error if the taskmanger is already running", func(t *testing.T) {
@@ -44,7 +52,7 @@ func TestManager_AddTask(t *testing.T) {
 		}()
 
 		g.Eventually(fakeTask1Start).Should(Receive())
-		err := director.AddTask("task2", fakeTask2, goasync.EXECUTE_TASK_TYPE_STRICT)
+		err := director.AddTask("task2", fakeTask2, goasync.TASK_TYPE_STRICT)
 		g.Expect(err).To(HaveOccurred())
 		g.Expect(err.Error()).To(Equal("task Manager is already running. Will not manage task"))
 		cancel()
@@ -94,6 +102,14 @@ func TestManager_AddExecuteTask(t *testing.T) {
 
 		g.Eventually(fakeTask1Start).Should(Receive())
 		g.Eventually(errs).Should(Receive(Equal([]goasync.NamedError{{TaskName: "task1", Stage: goasync.Execute, Err: fmt.Errorf("unexpected shutdown for task process")}})))
+	})
+
+	t.Run("It returns an error if the task type is invalid", func(t *testing.T) {
+		director := goasync.NewTaskManager()
+
+		err := director.AddExecuteTask("", &goasyncfakes.FakeTask{}, goasync.TASK_TYPE(32))
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(Equal("taskType must be one of [EXECUTE_TASK_TYPE_STRICT | EXECUTE_TASK_TYPE_ERROR]"))
 	})
 
 	t.Run("It returns an error if the task in nil", func(t *testing.T) {

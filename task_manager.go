@@ -74,6 +74,13 @@ func (t *TaskManager) AddTask(name string, task Task, taskType TASK_TYPE) error 
 		return fmt.Errorf("task cannot be nil")
 	}
 
+	switch taskType {
+	case TASK_TYPE_ERROR, TASK_TYPE_STRICT, TASK_TYPE_STOP_GROUP:
+		// these are fine
+	default:
+		return fmt.Errorf("taskType must be one of [TASK_TYPE_ERROR | TASK_TYPE_STRICT | TASK_TYPE_STOP_GROUP]")
+	}
+
 	select {
 	case <-t.done:
 		// check done before running
@@ -104,6 +111,13 @@ func (t *TaskManager) AddExecuteTask(name string, task ExecuteTask, taskType EXE
 
 	if task == nil {
 		return fmt.Errorf("task cannot be nil")
+	}
+
+	switch taskType {
+	case EXECUTE_TASK_TYPE_STRICT, EXECUTE_TASK_TYPE_ERROR:
+		// these are fine
+	default:
+		return fmt.Errorf("taskType must be one of [EXECUTE_TASK_TYPE_STRICT | EXECUTE_TASK_TYPE_ERROR]")
 	}
 
 	select {
