@@ -20,5 +20,7 @@ type NamedError struct {
 	TaskName string
 	Stage    Stage
 	Err      error
-	TaskType TASK_TYPE
+
+	TaskType        *TASK_TYPE
+	ExecuteTaskType *EXECUTE_TASK_TYPE
 }

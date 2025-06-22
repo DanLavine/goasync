@@ -18,14 +18,13 @@ const (
 )
 
 // EXECUTE_TASK_TYPE defines the possible task types that can applied to an already running Task Manager
-type EXECUTE_TASK_TYPE = TASK_TYPE
+type EXECUTE_TASK_TYPE int
 
 const (
 	// STRICT will cause a shutdown to all other tasks if they return before the Task Manager's Context has been canceled
-	EXECUTE_TASK_TYPE_STRICT EXECUTE_TASK_TYPE = TASK_TYPE_STRICT
-
+	EXECUTE_TASK_TYPE_STRICT EXECUTE_TASK_TYPE = iota
 	// ERROR will cause a shutdown to all other tasks if any non nil error is returned before the Task Manager's Context has been canceled
-	EXECUTE_TASK_TYPE_ERROR EXECUTE_TASK_TYPE = TASK_TYPE_ERROR
+	EXECUTE_TASK_TYPE_ERROR
 )
 
 // AsyncTaskManager manages any number of tasks
@@ -79,5 +78,5 @@ type executeTask struct {
 	name string
 	task ExecuteTask
 
-	taskType EXECUTE_TASK_TYPE
+	executeTaskType EXECUTE_TASK_TYPE
 }

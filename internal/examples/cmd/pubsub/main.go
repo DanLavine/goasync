@@ -22,10 +22,10 @@ func main() {
 	sub2 := pubsub.Subscriber("sub2", "counter", broker)
 
 	taskManger := goasync.NewTaskManager()
-	taskManger.AddTask("broker", broker, goasync.EXECUTE_TASK_TYPE_STRICT)
-	taskManger.AddTask("publisher", publisher, goasync.EXECUTE_TASK_TYPE_STRICT)
-	taskManger.AddTask("subscriber 1", sub1, goasync.EXECUTE_TASK_TYPE_STRICT)
-	taskManger.AddTask("subscriber 2", sub2, goasync.EXECUTE_TASK_TYPE_STRICT)
+	taskManger.AddTask("broker", broker, goasync.TASK_TYPE_STRICT)
+	taskManger.AddTask("publisher", publisher, goasync.TASK_TYPE_STRICT)
+	taskManger.AddTask("subscriber 1", sub1, goasync.TASK_TYPE_STRICT)
+	taskManger.AddTask("subscriber 2", sub2, goasync.TASK_TYPE_STRICT)
 
 	if errs := taskManger.Run(shutdown); errs != nil {
 		log.Fatal(errs)

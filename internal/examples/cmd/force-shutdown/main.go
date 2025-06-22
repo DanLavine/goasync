@@ -21,7 +21,7 @@ func main() {
 	foreverTask := forceshutdown.ForeverTask()
 
 	taskManger := goasync.NewTaskManager()
-	taskManger.AddTask("foreverTask", tasks.ForceStop(5*time.Second, foreverTask), goasync.EXECUTE_TASK_TYPE_STRICT)
+	taskManger.AddTask("foreverTask", tasks.ForceStop(5*time.Second, foreverTask), goasync.TASK_TYPE_STRICT)
 
 	if errs := taskManger.Run(shutdown); errs != nil {
 		log.Fatal(errs)

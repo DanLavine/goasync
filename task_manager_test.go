@@ -12,6 +12,10 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+func pointerOf[T any](value T) *T {
+	return &value
+}
+
 func TestManager_AddTask(t *testing.T) {
 	g := NewGomegaWithT(t)
 
@@ -43,7 +47,7 @@ func TestManager_AddTask(t *testing.T) {
 		fakeTask2 := &goasyncfakes.FakeTask{}
 
 		director := goasync.NewTaskManager()
-		director.AddTask("task1", fakeTask1, goasync.EXECUTE_TASK_TYPE_STRICT)
+		director.AddTask("task1", fakeTask1, goasync.TASK_TYPE_STRICT)
 
 		ctx, cancel := context.WithCancel(context.Background())
 		errs := make(chan []goasync.NamedError)
@@ -74,7 +78,7 @@ func TestManager_AddTask(t *testing.T) {
 		// don't care about any of these errors
 		_ = director.Run(ctx)
 
-		err := director.AddTask("task1", fakeTask1, goasync.EXECUTE_TASK_TYPE_STRICT)
+		err := director.AddTask("task1", fakeTask1, goasync.TASK_TYPE_STRICT)
 		g.Expect(err).To(HaveOccurred())
 		g.Expect(err.Error()).To(Equal("task Manager has already shutdown. Will not manage task"))
 	})
@@ -101,13 +105,13 @@ func TestManager_AddExecuteTask(t *testing.T) {
 		}()
 
 		g.Eventually(fakeTask1Start).Should(Receive())
-		g.Eventually(errs).Should(Receive(Equal([]goasync.NamedError{{TaskName: "task1", Stage: goasync.Execute, Err: fmt.Errorf("unexpected shutdown for task process")}})))
+		g.Eventually(errs).Should(Receive(Equal([]goasync.NamedError{{TaskName: "task1", Stage: goasync.Execute, Err: fmt.Errorf("unexpected shutdown for task process"), ExecuteTaskType: pointerOf(goasync.EXECUTE_TASK_TYPE_STRICT)}})))
 	})
 
 	t.Run("It returns an error if the task type is invalid", func(t *testing.T) {
 		director := goasync.NewTaskManager()
 
-		err := director.AddExecuteTask("", &goasyncfakes.FakeTask{}, goasync.TASK_TYPE(32))
+		err := director.AddExecuteTask("", &goasyncfakes.FakeTask{}, goasync.EXECUTE_TASK_TYPE(32))
 		g.Expect(err).To(HaveOccurred())
 		g.Expect(err.Error()).To(Equal("taskType must be one of [EXECUTE_TASK_TYPE_STRICT | EXECUTE_TASK_TYPE_ERROR]"))
 	})
@@ -177,8 +181,8 @@ func TestManager_Run(t *testing.T) {
 			fakeTask2 := &goasyncfakes.FakeTask{}
 
 			director := goasync.NewTaskManager()
-			director.AddTask("task1", fakeTask1, goasync.EXECUTE_TASK_TYPE_STRICT)
-			director.AddTask("task2", fakeTask2, goasync.EXECUTE_TASK_TYPE_STRICT)
+			director.AddTask("task1", fakeTask1, goasync.TASK_TYPE_STRICT)
+			director.AddTask("task2", fakeTask2, goasync.TASK_TYPE_STRICT)
 
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel()
@@ -213,9 +217,9 @@ func TestManager_Run(t *testing.T) {
 			fakeTask3.InitializeReturns(fmt.Errorf("failed to initialize"))
 
 			director := goasync.NewTaskManager()
-			director.AddTask("task1", fakeTask1, goasync.EXECUTE_TASK_TYPE_STRICT)
-			director.AddTask("task2", fakeTask2, goasync.EXECUTE_TASK_TYPE_STRICT)
-			director.AddTask("task3", fakeTask3, goasync.EXECUTE_TASK_TYPE_STRICT)
+			director.AddTask("task1", fakeTask1, goasync.TASK_TYPE_STRICT)
+			director.AddTask("task2", fakeTask2, goasync.TASK_TYPE_STRICT)
+			director.AddTask("task3", fakeTask3, goasync.TASK_TYPE_STRICT)
 
 			errs := make(chan []goasync.NamedError)
 			go func() {
@@ -251,8 +255,8 @@ func TestManager_Run(t *testing.T) {
 			}
 
 			director := goasync.NewTaskManager()
-			director.AddTask("task1", fakeTask1, goasync.EXECUTE_TASK_TYPE_STRICT)
-			director.AddTask("task2", fakeTask2, goasync.EXECUTE_TASK_TYPE_STRICT)
+			director.AddTask("task1", fakeTask1, goasync.TASK_TYPE_STRICT)
+			director.AddTask("task2", fakeTask2, goasync.TASK_TYPE_STRICT)
 
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel()
@@ -287,7 +291,7 @@ func TestManager_Run(t *testing.T) {
 					errs <- director.Run(context.Background())
 				}()
 
-				g.Eventually(errs).Should(Receive(Equal([]goasync.NamedError{{TaskName: "task1", Stage: goasync.Execute, Err: failErr}})))
+				g.Eventually(errs).Should(Receive(Equal([]goasync.NamedError{{TaskName: "task1", Stage: goasync.Execute, Err: failErr, TaskType: pointerOf(goasync.TASK_TYPE_STRICT)}})))
 			})
 
 			t.Run("It cancels all other tasks on an unexpected return", func(t *testing.T) {
@@ -303,7 +307,7 @@ func TestManager_Run(t *testing.T) {
 					errs <- director.Run(context.Background())
 				}()
 
-				g.Eventually(errs).Should(Receive(Equal([]goasync.NamedError{{TaskName: "task1", Stage: goasync.Execute, Err: fmt.Errorf("unexpected shutdown for task process")}})))
+				g.Eventually(errs).Should(Receive(Equal([]goasync.NamedError{{TaskName: "task1", Stage: goasync.Execute, Err: fmt.Errorf("unexpected shutdown for task process"), TaskType: pointerOf(goasync.TASK_TYPE_STRICT)}})))
 			})
 		})
 
@@ -323,7 +327,7 @@ func TestManager_Run(t *testing.T) {
 					errs <- director.Run(context.Background())
 				}()
 
-				g.Eventually(errs).Should(Receive(Equal([]goasync.NamedError{{TaskName: "task1", Stage: goasync.Execute, Err: failErr, TaskType: goasync.TASK_TYPE_ERROR}})))
+				g.Eventually(errs).Should(Receive(Equal([]goasync.NamedError{{TaskName: "task1", Stage: goasync.Execute, Err: failErr, TaskType: pointerOf(goasync.TASK_TYPE_ERROR)}})))
 			})
 
 			t.Run("It does not cancel other tasks when returning", func(t *testing.T) {
@@ -363,7 +367,7 @@ func TestManager_Run(t *testing.T) {
 					errs <- director.Run(context.Background())
 				}()
 
-				g.Eventually(errs).Should(Receive(Equal([]goasync.NamedError{{TaskName: "task1", Stage: goasync.Execute, Err: failErr, TaskType: goasync.TASK_TYPE_STOP_GROUP}})))
+				g.Eventually(errs).Should(Receive(Equal([]goasync.NamedError{{TaskName: "task1", Stage: goasync.Execute, Err: failErr, TaskType: pointerOf(goasync.TASK_TYPE_STOP_GROUP)}})))
 			})
 
 			t.Run("It cancels all other tasks when each STOP_GROUP finishes", func(t *testing.T) {
@@ -403,11 +407,12 @@ func TestManager_Run(t *testing.T) {
 				running := make(chan struct{})
 				fakeTask1 := &goasyncfakes.FakeExecuteTask{}
 				fakeTask1.ExecuteStub = func(ctx context.Context) error {
-					close(running)
+					running <- struct{}{}
 					return nil
 				}
 				fakeTask2 := &goasyncfakes.FakeExecuteTask{}
 				fakeTask2.ExecuteStub = func(ctx context.Context) error {
+					close(running)
 					<-ctx.Done()
 					return nil
 				}
@@ -421,10 +426,11 @@ func TestManager_Run(t *testing.T) {
 					errs <- director.Run(ctx)
 				}()
 
-				g.Eventually(running).Should(BeClosed())
+				g.Eventually(running).Should(Receive(Equal(struct{}{})))
 				g.Expect(director.AddExecuteTask("task2", fakeTask2, goasync.EXECUTE_TASK_TYPE_ERROR)).ToNot(HaveOccurred())
 
 				cancel()
+				g.Eventually(running).Should(BeClosed())
 				g.Eventually(errs).Should(Receive(BeNil()))
 			})
 		})
@@ -449,7 +455,7 @@ func TestManager_Run(t *testing.T) {
 					errs <- director.Run(context.Background())
 				}()
 
-				g.Eventually(errs).Should(Receive(Equal([]goasync.NamedError{{TaskName: "task1", Stage: goasync.Execute, Err: failErr}})))
+				g.Eventually(errs).Should(Receive(Equal([]goasync.NamedError{{TaskName: "task1", Stage: goasync.Execute, Err: failErr, ExecuteTaskType: pointerOf(goasync.EXECUTE_TASK_TYPE_STRICT)}})))
 			})
 
 			t.Run("It cancels all other tasks on an unexpected return", func(t *testing.T) {
@@ -469,7 +475,7 @@ func TestManager_Run(t *testing.T) {
 					errs <- director.Run(context.Background())
 				}()
 
-				g.Eventually(errs).Should(Receive(Equal([]goasync.NamedError{{TaskName: "task1", Stage: goasync.Execute, Err: fmt.Errorf("unexpected shutdown for task process")}})))
+				g.Eventually(errs).Should(Receive(Equal([]goasync.NamedError{{TaskName: "task1", Stage: goasync.Execute, Err: fmt.Errorf("unexpected shutdown for task process"), ExecuteTaskType: pointerOf(goasync.EXECUTE_TASK_TYPE_STRICT)}})))
 			})
 		})
 
@@ -493,7 +499,7 @@ func TestManager_Run(t *testing.T) {
 					errs <- director.Run(context.Background())
 				}()
 
-				g.Eventually(errs).Should(Receive(Equal([]goasync.NamedError{{TaskName: "task1", Stage: goasync.Execute, Err: failErr, TaskType: goasync.EXECUTE_TASK_TYPE_ERROR}})))
+				g.Eventually(errs).Should(Receive(Equal([]goasync.NamedError{{TaskName: "task1", Stage: goasync.Execute, Err: failErr, ExecuteTaskType: pointerOf(goasync.EXECUTE_TASK_TYPE_ERROR)}})))
 			})
 
 			t.Run("It does not cancel other tasks when returning", func(t *testing.T) {
@@ -525,12 +531,12 @@ func TestManager_parallel_tests(t *testing.T) {
 	fakeTask := &goasyncfakes.FakeTask{}
 
 	director := goasync.NewTaskManager()
-	director.AddTask("task1", tasks.Repeatable(fakeTask), goasync.EXECUTE_TASK_TYPE_STRICT)
-	director.AddTask("task2", tasks.Repeatable(fakeTask), goasync.EXECUTE_TASK_TYPE_STRICT)
+	director.AddTask("task1", tasks.Repeatable(fakeTask), goasync.TASK_TYPE_STRICT)
+	director.AddTask("task2", tasks.Repeatable(fakeTask), goasync.TASK_TYPE_STRICT)
 	director.AddExecuteTask("task3", tasks.Repeatable(fakeTask), goasync.EXECUTE_TASK_TYPE_STRICT)
 	director.AddExecuteTask("task4", tasks.Repeatable(fakeTask), goasync.EXECUTE_TASK_TYPE_STRICT)
-	director.AddTask("task5", tasks.Repeatable(fakeTask), goasync.EXECUTE_TASK_TYPE_STRICT)
-	director.AddTask("task6", tasks.Repeatable(fakeTask), goasync.EXECUTE_TASK_TYPE_STRICT)
+	director.AddTask("task5", tasks.Repeatable(fakeTask), goasync.TASK_TYPE_STRICT)
+	director.AddTask("task6", tasks.Repeatable(fakeTask), goasync.TASK_TYPE_STRICT)
 	director.AddExecuteTask("task7", tasks.Repeatable(fakeTask), goasync.EXECUTE_TASK_TYPE_STRICT)
 
 	ctx, cancel := context.WithCancel(context.Background())

@@ -105,7 +105,7 @@ func (t *TaskManager) AddTask(name string, task Task, taskType TASK_TYPE) error 
 //	- error - any errors when adding the task to be managed
 //
 // AddExecuteTask can be used to add a new task to the Taskmanger before or after it is already running
-func (t *TaskManager) AddExecuteTask(name string, task ExecuteTask, taskType EXECUTE_TASK_TYPE) error {
+func (t *TaskManager) AddExecuteTask(name string, task ExecuteTask, executeTaskType EXECUTE_TASK_TYPE) error {
 	t.taskLock.Lock()
 	defer t.taskLock.Unlock()
 
@@ -113,7 +113,7 @@ func (t *TaskManager) AddExecuteTask(name string, task ExecuteTask, taskType EXE
 		return fmt.Errorf("task cannot be nil")
 	}
 
-	switch taskType {
+	switch executeTaskType {
 	case EXECUTE_TASK_TYPE_STRICT, EXECUTE_TASK_TYPE_ERROR:
 		// these are fine
 	default:
@@ -130,14 +130,14 @@ func (t *TaskManager) AddExecuteTask(name string, task ExecuteTask, taskType EXE
 			select {
 			case t.addTaskChan <- struct{}{}:
 				go func() {
-					t.namedErrorChan <- &NamedError{TaskName: name, Stage: Execute, Err: task.Execute(t.ctx), TaskType: taskType}
+					t.namedErrorChan <- &NamedError{TaskName: name, Stage: Execute, Err: task.Execute(t.ctx), ExecuteTaskType: &executeTaskType}
 				}()
 			case <-t.done:
 				// must be shutting down There is a slim race when trying to add tasks async and a cancel happen at the same time
 				return fmt.Errorf("task Manager has already shutdown. Will not manage task")
 			}
 		default:
-			t.executeTasks = append(t.executeTasks, executeTask{name: name, task: task, taskType: taskType})
+			t.executeTasks = append(t.executeTasks, executeTask{name: name, task: task, executeTaskType: executeTaskType})
 		}
 	}
 
@@ -220,7 +220,7 @@ func (t *TaskManager) Run(ctx context.Context) []NamedError {
 
 				go func(namedTask namedTask) {
 
-					t.namedErrorChan <- &NamedError{TaskName: namedTask.name, Stage: Execute, Err: namedTask.task.Execute(taskCtx), TaskType: namedTask.taskType}
+					t.namedErrorChan <- &NamedError{TaskName: namedTask.name, Stage: Execute, Err: namedTask.task.Execute(taskCtx), TaskType: &namedTask.taskType}
 				}(namedWork)
 			}
 
@@ -229,7 +229,7 @@ func (t *TaskManager) Run(ctx context.Context) []NamedError {
 				t.tasksCounter += 1
 
 				go func(executeTask executeTask) {
-					t.namedErrorChan <- &NamedError{TaskName: executeTask.name, Stage: Execute, Err: executeTask.task.Execute(taskCtx), TaskType: executeTask.taskType}
+					t.namedErrorChan <- &NamedError{TaskName: executeTask.name, Stage: Execute, Err: executeTask.task.Execute(taskCtx), ExecuteTaskType: &executeTask.executeTaskType}
 				}(executeWork)
 			}
 
@@ -267,38 +267,63 @@ func (t *TaskManager) Run(ctx context.Context) []NamedError {
 						taskErrors = append(taskErrors, *namedError)
 					}
 
-					switch namedError.TaskType {
-					case TASK_TYPE_STRICT:
-						select {
-						case <-taskCtx.Done():
-							// nothing to do here
-						default:
-							cancel()
+					if namedError.TaskType != nil {
+						switch *namedError.TaskType {
+						case TASK_TYPE_STRICT:
+							select {
+							case <-taskCtx.Done():
+								// nothing to do here
+							default:
+								cancel()
 
-							// record unexpected return from an async func
-							if namedError.Err == nil {
-								namedError.Err = unexpectedStop
-								taskErrors = append(taskErrors, *namedError)
+								// record unexpected return from an async func
+								if namedError.Err == nil {
+									namedError.Err = unexpectedStop
+									taskErrors = append(taskErrors, *namedError)
+								}
 							}
-						}
-					case TASK_TYPE_ERROR:
-						// if the error is anything other than nil, we need to cancel all other running tasks
-						if namedError.Err != nil {
-							cancel()
-						}
-					case TASK_TYPE_STOP_GROUP:
-						// if the error is anything other than nil, we need to cancel all other running tasks
-						if namedError.Err != nil {
-							cancel()
-						}
+						case TASK_TYPE_ERROR:
+							// if the error is anything other than nil, we need to cancel all other running tasks
+							if namedError.Err != nil {
+								cancel()
+							}
+						case TASK_TYPE_STOP_GROUP:
+							// if the error is anything other than nil, we need to cancel all other running tasks
+							if namedError.Err != nil {
+								cancel()
+							}
 
-						// all stop group tests have finished
-						t.stopTaskCounter--
-						if t.stopTaskCounter <= 0 {
-							cancel()
+							// all stop group tests have finished
+							t.stopTaskCounter--
+							if t.stopTaskCounter <= 0 {
+								cancel()
+							}
+						default:
+							panic("unknown task type to process error")
 						}
-					default:
-						panic("unknown task type to process error")
+					} else {
+						switch *namedError.ExecuteTaskType {
+						case EXECUTE_TASK_TYPE_STRICT:
+							select {
+							case <-taskCtx.Done():
+								// nothing to do here
+							default:
+								cancel()
+
+								// record unexpected return from an async func
+								if namedError.Err == nil {
+									namedError.Err = unexpectedStop
+									taskErrors = append(taskErrors, *namedError)
+								}
+							}
+						case EXECUTE_TASK_TYPE_ERROR:
+							// if the error is anything other than nil, we need to cancel all other running tasks
+							if namedError.Err != nil {
+								cancel()
+							}
+						default:
+							panic("unknown task type to process error")
+						}
 					}
 				case <-t.done:
 					// in this case, we have stopped processing all our background processes so we can exit
